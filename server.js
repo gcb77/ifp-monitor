@@ -12,7 +12,13 @@ if(process.env['HOST_PORT']) {
 }
 
 app.get('/', function(req, res) {
+  res.send("<a href='/monitor'>Monitor</a><br>" +
+  "<a href='/start'>Start</a><br>" +
+  "<a href='/stop'>Stop</a><br>" +
+  "<hr>" +
 
+  monitor.getStats()
+  )
 })
 
 app.get('/monitor', function(req,res) {

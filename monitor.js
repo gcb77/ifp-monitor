@@ -76,6 +76,9 @@ function monitorFunction() {
 }
 
 function monitorStart() {
+  if(monitorInterval) {
+    return
+  }
   stats.started = Date.now()
   stats.stopped = undefined
   monitorInterval = setInterval(monitorFunction, monitoringInterval)
