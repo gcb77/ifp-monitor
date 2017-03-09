@@ -15,9 +15,9 @@ app.get('/', function(req, res) {
   res.send("<a href='/monitor'>Monitor</a><br>" +
   "<a href='/start'>Start</a><br>" +
   "<a href='/stop'>Stop</a><br>" +
-  "<hr>" +
+  "<hr>Monitoring: " +
 
-  monitor.getStats()
+  JSON.stringify(monitor.getStats().monitoredPlayers)
   )
 })
 
@@ -41,5 +41,7 @@ app.get('/stop', function(req,res) {
 })
 
 app.listen(port)
+
+console.log("Running...")
 
 exports = module.exports = app;
