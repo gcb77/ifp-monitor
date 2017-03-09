@@ -59,6 +59,7 @@ function monitorFunction() {
           } else {
             notifiedPlayers[key] = true
             var message = "Table " + match.table + " " + match.event + " " + match.team1 + " vs " + match.team2
+            console.log(new Date() + " notifying " + player + "(" + monitoredPlayers[player].number+") " + message)
             sms.sendMessage(monitoredPlayers[player].number, message)
             stats.notificationsSent += 1
           }
