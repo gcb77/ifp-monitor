@@ -14,7 +14,7 @@ var sendMessage = function(number, message) {
     if(err) {
       console.log("Error: ", err)
     } else {
-      console.log(message.sid);
+      // console.log(message.sid);
     }
   });
 }

@@ -11,6 +11,7 @@ var monitoredPlayers = {}
 var notifiedPlayers = {}
 var monitorInterval = undefined
 var notifiedProblems = false
+var monitoringInterval = 30000
 
 var stats = {
   monitoredPlayers: [],
@@ -18,6 +19,7 @@ var stats = {
 }
 
 function addMonitoredPlayer(name, number) {
+  sms.sendMessage(adminNumber, "Added " + name + " to monitor, sending notifications to " + number)
   monitoredPlayers[name] = {
     number: number
   }
@@ -76,7 +78,7 @@ function monitorFunction() {
 function monitorStart() {
   stats.started = Date.now()
   stats.stopped = undefined
-  monitorInterval = setInterval(monitorFunction, 10000)
+  monitorInterval = setInterval(monitorFunction, monitoringInterval)
 }
 
 function monitorStop() {

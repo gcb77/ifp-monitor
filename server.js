@@ -6,6 +6,11 @@ var monitor = require('./monitor.js')
 
 var app = express()
 
+var port = 8081
+if(process.env['HOST_PORT']) {
+  port = process.env['HOST_PORT']
+}
+
 app.get('/', function(req, res) {
 
 })
@@ -29,7 +34,6 @@ app.get('/stop', function(req,res) {
   res.send("Stopped")
 })
 
-
-app.listen('8081')
+app.listen(port)
 
 exports = module.exports = app;
