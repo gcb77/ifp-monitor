@@ -1,14 +1,37 @@
 var express = require('express')
+var basicAuth = require('express-basic-auth')
 var fs = require('fs')
 
 var scraper = require('./scraper.js')
 var monitor = require('./monitor.js')
 
+var user = process.env['SECURE_USER']
+var password = process.env['SECURE_PASSWORD']
+
 var app = express()
+if(user && password) {
+  console.log("Authentication enabled with user: " + user )
+  var config={}
+  config[user] = password
+  app.use(basicAuth({
+    users: config,
+    challenge: true,
+    realm: 'ifpMonitor1',
+    unauthorizedResponse: getUnauthorizedResponse
+  }))
+} else {
+  console.warn("No SECURE_USER or SECURE_PASSWORD provided, running with no authentication!")
+}
 
 var port = 8081
 if(process.env['HOST_PORT']) {
   port = process.env['HOST_PORT']
+}
+
+function getUnauthorizedResponse(req) {
+  return req.auth ?
+    ('Credentials for user ' + req.auth.user + ' rejected') :
+    'No credentials provided'
 }
 
 app.get('/', function(req, res) {
