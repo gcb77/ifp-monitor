@@ -4,3 +4,5 @@ node_modules
 public/
 run.sh
 screenlog*
+.players
+.notifications

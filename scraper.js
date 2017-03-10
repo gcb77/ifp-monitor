@@ -12,14 +12,18 @@ var findMatches = function(data) {
     var table = matchRow.children[2].children[1].attribs.value
     var team1 = matchRow.children[5].children[1].children[0].data
     var team2 = matchRow.children[7].children[1].children[0].data
+    var forPs = matchRow.children[9].children[1].children[0].data
 
     event = event.replace(/\n|\r|\t/g, '')
+    table = table.replace(/\n|\r|\t/g, '')
+    forPs = forPs.replace(/\n|\r|\t/g, '')
 
     matches.push({
       event: event,
       table: table,
       team1: team1,
-      team2: team2
+      team2: team2,
+      forPosition: forPs
     })
     // console.log("MATCH: " + event + ' ' + team1 + " vs " + team2 + ' on table ' + table)
   })
