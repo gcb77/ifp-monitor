@@ -54,7 +54,7 @@ function monitorFunction() {
         // console.log(html)
 
         //For testing
-        html = fs.readFileSync('data/test2.html')
+        // html = fs.readFileSync('data/test2.html')
 
         //Find the matches we are interested in
         var currentMatches = scraper.findMatches(html)
