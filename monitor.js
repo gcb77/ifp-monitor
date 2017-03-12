@@ -18,7 +18,8 @@ var monitoringInterval = 30000
 
 var stats = {
   monitoredPlayers: [],
-  notificationsSent: 0
+  notificationsSent: 0,
+  notificationLog: []
 }
 
 function monitorStatus(name, status) {
@@ -32,7 +33,14 @@ function addMonitoredPlayer(name, number) {
   if(!stats.started) {
     throw new Error("Not Started!<br><a href='/'>Back</a>")
   }
+
+  //Send message to admin
   sms.sendMessage(adminNumber, "Added " + name + " to monitor, sending notifications to " + number)
+
+  //Send message to subscriber
+  sms.sendMessage(number, name + " has been added to the IFP events monitor.  Respond with STOP if you wish to be removed.")
+
+  //Track the monitored player
   serverData.monitoredPlayers[name] = {
     number: number,
     enabled: true
@@ -51,42 +59,82 @@ function monitorFunction() {
 
       //Check return status
       if (!err && response.statusCode == 200) {
-        // console.log(html)
 
-        //For testing
-        // html = fs.readFileSync('data/test2.html')
+        //Notify after a failure that we are back online
+        if(notifiedProblems) {
+          notifiedProblems = false
+          sms.sendMessage(adminNumber, "Functionality restored")
+        }
+
+        //For testing, allow an override html file
+        if(process.env['IFPMON_DATA_OVERRIDE']){
+          console.log("USING OVERRIDE: " + process.env['IFPMON_DATA_OVERRIDE'])
+          html = fs.readFileSync(process.env['IFPMON_DATA_OVERRIDE'])
+        }
+
+        //Flag all current notifications as potentially ready to remove
+        Object.keys(serverData.notifiedPlayers).forEach(function(key) {
+          serverData.notifiedPlayers[key] = 0
+        })
 
         //Find the matches we are interested in
         var currentMatches = scraper.findMatches(html)
         stats.currentMatches = currentMatches
-        // console.log(currentMatches.length + " matches in progress")
-        // console.log("Current matches: " + currentMatches)
+
+        //Use the scraping utility to find the players currently called up
         var players = scraper.findPlayers(currentMatches, Object.keys(serverData.monitoredPlayers))
-        // console.log("Players: " + JSON.stringify(players))
 
         //Notify each player
         Object.keys(players).forEach(function(player) {
           var match = players[player]
           //Make a unique key for this notification so we don't repeat it: player, event, team1 and team2
-          var key = player+'_'+match.event+'_'+match.team1+'_'+match.team2+'_'+match.forPosition
-          if(serverData.notifiedPlayers[key]) {
+          var key = player+'_'+match.event+'_'+match.team1+'_'+match.team2+'_'+match.forPosition+'_'+match.table
+          if(serverData.notifiedPlayers[key] != undefined) {
             // console.log("Already notified: " + key)
+
+            //Flag this notification as still active
+            serverData.notifiedPlayers[key] = 1
           } else {
-            serverData.notifiedPlayers[key] = true
+            serverData.notifiedPlayers[key] = 1
             var message = "Table " + match.table + " " + match.event + " " + match.team1 + " vs " + match.team2 + ' for ' + match.forPosition
             if(serverData.monitoredPlayers[player].enabled) {
-              console.log(new Date() + " notifying " + player + "(" + serverData.monitoredPlayers[player].number + ") " + message)
+              var dt = new Date()
+              console.log(dt + " notifying " + player + "(" + serverData.monitoredPlayers[player].number + ") " + message)
               sms.sendMessage(serverData.monitoredPlayers[player].number, message)
               stats.notificationsSent += 1
+              stats.notificationLog.push(
+                ("00" + dt.getHours()).slice(-2) +':'+
+                ("00" + dt.getMinutes()).slice(-2) +':'+
+                ("00" + dt.getSeconds()).slice(-2) + ' ' +
+                player + " (" + serverData.monitoredPlayers[player].number + ") - " +
+                message)
             } else {
               console.log("Player " + player + " is disabled, not sending notification")
             }
-            fs.writeFileSync('./.notifications', JSON.stringify(serverData.notifiedPlayers))
           }
         })
+
+        //Remove all notifications that are no longer active
+        Object.keys(serverData.notifiedPlayers).forEach(function(key) {
+          if(serverData.notifiedPlayers[key] == 0) {
+            // console.log("Removing notify key: " + key)
+            delete serverData.notifiedPlayers[key]
+          }
+        })
+
+        //Save the notifications so we don't resend
+        fs.writeFileSync('./.notifications', JSON.stringify(serverData.notifiedPlayers))
       } else {
+        //We've had a failure
+
+        //First time failure, notify admin of problem
         if (!notifiedProblems) {
-          sms.sendMessage(adminNumber, 'Request failed')
+          var status = response ? response.status : '?'
+          var msg = "Request failed.. status: " + status
+          if(err) {
+            msg += ' error: ' + err
+          }
+          sms.sendMessage(adminNumber, msg)
           notifiedProblems = true
         }
       }
