@@ -61,7 +61,7 @@ app.get('/monitor', function(req,res) {
   }
   send.push("</ul>")
   send.push("</hr>")
-  send.push(JSON.stringify(stats))
+  // send.push(JSON.stringify(stats))
   res.send(send.join('\n'))
 })
 
@@ -70,37 +70,61 @@ app.get('/setMonitorStatus/:name/:status', function(req, res) {
   res.redirect('/players')
 })
 
+app.get('/log', function(req, res) {
+  var send = []
+
+  send.push(fs.readFileSync('head.html'))
+  send.push(fs.readFileSync('nav.html'))
+
+  send.push('<b>Notification Log</b><br><br>')
+
+  var stats = monitor.getStats()
+
+  stats.notificationLog.forEach(function(log) {
+    send.push('<div class="well well-sm">'+log+'</div><br>')
+  })
+
+  res.send(send.join('\n'))
+})
+
 app.get('/players', function(req, res) {
-  var retBuf = []
+  var send = []
 
-  retBuf.push(fs.readFileSync('head.html'))
-  retBuf.push(fs.readFileSync('nav.html'))
+  send.push(fs.readFileSync('head.html'))
+  send.push(fs.readFileSync('nav.html'))
 
-  retBuf.push('<form method="GET" action="addPlayer">')
-  retBuf.push('NAME: <input type=text name="name">')
-  retBuf.push('NUMBER: <input type=text name="number">')
-  retBuf.push('<input type="submit">')
-  retBuf.push('</form>')
+  send.push('<form method="GET" action="addPlayer">')
+  send.push('<div class="col-xs-5">')
+  send.push('NAME: <input type=text name="name">')
+  send.push('</div><div class="col-xs-5">')
+  send.push('NUMBER: <input type=text name="number">')
+  send.push('</div><div class="col-xs-2">')
+  send.push('<input type="submit" class="btn">')
+  send.push('</div>')
+  send.push('</form><br><hr>')
 
-  retBuf.push('<div class="row">')
   var players = monitor.getMonitoredPlayers()
   Object.keys(players).forEach(function(player) {
-    retBuf.push('<div class="col-md-2">')
-    retBuf.push(player)
-    retBuf.push('</div>')
-    retBuf.push('<div class="col-md-2">')
+    send.push('<div class="row">')
+    send.push('<div class="col col-xs-3">')
+    send.push(player)
+    send.push('</div>')
+    send.push('<div class="col col-xs-3">')
+    send.push(players[player].number)
+    send.push('</div>')
+    send.push('<div class="col col-xs-6">')
     if(players[player].enabled) {
-      retBuf.push("<a href='/setMonitorStatus/" + encodeURIComponent(player) + "/false'>Disable</a>")
+      send.push("<a href='/setMonitorStatus/" + encodeURIComponent(player) + "/false'>Disable</a>")
     } else {
-      retBuf.push("<a href='/setMonitorStatus/" + encodeURIComponent(player) + "/true'>Enable</a>")
+      send.push("<a href='/setMonitorStatus/" + encodeURIComponent(player) + "/true'>Enable</a>")
     }
-    retBuf.push('</div>')
-    retBuf.push('<br>')
+    send.push('</div>')
+    send.push('</div>')
+    send.push('<br>')
   })
-  retBuf.push('</div>')
 
-  retBuf.push('</body>')
-  res.send(retBuf.join('\n'))
+  send.push('</body>')
+  res.send(send.join('\n'))
 })
 
 app.get('/addPlayer', function(req,res) {
@@ -127,6 +151,6 @@ app.get('/stop', function(req,res) {
 
 app.listen(port)
 
-console.log("Running...")
+console.log("Program running, monitor currently stopped...")
 
 exports = module.exports = app;
