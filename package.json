@@ -4,6 +4,7 @@
   "description": "Web service that monitors matches in progress at an IFP (International Foosball Promotions) event and sends notification messages to players who are being called.",
   "author": "George Barta <george.barta@gmail.com>",
   "dependencies": {
+    "body-parser": "^1.17.1",
     "cheerio": "^0.22.0",
     "express": "^4.15.2",
     "express-basic-auth": "^1.0.0",

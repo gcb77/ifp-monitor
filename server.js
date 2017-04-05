@@ -1,5 +1,6 @@
 var express = require('express')
 var basicAuth = require('express-basic-auth')
+var bodyParser = require('body-parser')
 var fs = require('fs')
 
 var scraper = require('./scraper.js')
@@ -13,6 +14,16 @@ if(user && password) {
   console.log("Authentication enabled with user: " + user )
   var config={}
   config[user] = password
+
+  //Use body-parser for messageIn
+  app.use('/messageIn', bodyParser.urlencoded())
+
+  //Auto-inject authentication for 'messageIn'
+  app.use('/messageIn', function(req,res,next) {
+    req.headers['authorization'] = 'Basic ' + Buffer.from(user+':'+password).toString('base64')
+    next()
+  })
+
   app.use(basicAuth({
     users: config,
     challenge: true,
@@ -147,6 +158,12 @@ app.get('/stop', function(req,res) {
   monitor.monitorStop()
   res.redirect('/')
   // res.send("Stopped")
+})
+
+
+app.post('/messageIn', function(req, res) {
+  console.log("BODY: ", req.body)
+  res.send('<Response><Message>Got It</Message></Response>')
 })
 
 app.listen(port)
