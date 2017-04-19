@@ -167,7 +167,7 @@ app.get('/stop', function(req,res) {
 
 app.post('/messageIn', function(req, res) {
   /*
-   if STOP track number and remove from monitor
+   if REMOVE track number and remove from monitor
      monitor.removeMonitorNumber(number)
    else monitor.playerSearch(req.body)
      none: respond with error
@@ -180,8 +180,8 @@ app.post('/messageIn', function(req, res) {
   var msg = req.body.Body
   var number = req.body.From
   if(!msg || msg.length < 4) {
-    res.send("<Response><Message>\nInvalid request. Send 'STOP' or 'Player Name'\n</Message></Response>")
-  } else if(msg.match(/^STOP/i)) {
+    res.send("<Response><Message>\nInvalid request. Send 'REMOVE' or 'Player Name'\n</Message></Response>")
+  } else if(msg.match(/^REMOVE/i)) {
     monitor.removeMonitorNumber(number).then(function(names) {
       if(names && names.length > 0) {
         res.send('<Response><Message>No longer monitoring: ' + names.join(' ') + '</Message></Response>')
