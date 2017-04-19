@@ -12,7 +12,9 @@ var password = process.env['SECURE_PASSWORD']
 var app = express()
 
 //Use body-parser for messageIn
-app.use('/messageIn', bodyParser.urlencoded())
+app.use('/messageIn', bodyParser.urlencoded({
+  extended: true
+}))
 
 if(user && password) {
   console.log("Authentication enabled with user: " + user )
