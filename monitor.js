@@ -48,7 +48,7 @@ function addMonitoredPlayer(name, number) {
     sms.sendMessage(adminNumber, "Added " + name + " to monitor, sending notifications to " + number)
 
     //Send message to subscriber
-    sms.sendMessage(number, name + " has been added to the IFP events monitor.  Respond with STOP if you wish to be removed.")
+    sms.sendMessage(number, name + " has been added to the IFP events monitor.  Respond with REMOVE if you wish to be removed.")
 
     //Track the monitored player
     serverData.monitoredPlayers[name] = {
