@@ -235,6 +235,7 @@ function playerSearch(searchText) {
           var matches = []
 
           searchText = searchText.replace(/\s+/, '\\s+')
+          searchText = searchText.replace(/\(..\)/, '')
           var re = new RegExp(searchText, 'i')
 
           //Iterate over players

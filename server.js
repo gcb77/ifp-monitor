@@ -173,7 +173,8 @@ app.post('/messageIn', function(req, res) {
      > 1: show list
      1: monitor.addMonitoredPlayer(name, number)
    */
-  console.log("BODY: ", req.body)
+  // console.log("BODY: ", req.body)
+  fs.writeFileSync('./messages/'+Date.now()+'.txt')
   var msg = req.body.Body
   var number = req.body.From
   if(!msg || msg.length < 4) {

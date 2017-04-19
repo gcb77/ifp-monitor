@@ -6,3 +6,4 @@ run.sh
 screenlog*
 .players
 .notifications
+messages/*.txt
