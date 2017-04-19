@@ -10,13 +10,15 @@ var user = process.env['SECURE_USER']
 var password = process.env['SECURE_PASSWORD']
 
 var app = express()
+
+//Use body-parser for messageIn
+app.use('/messageIn', bodyParser.urlencoded())
+
 if(user && password) {
   console.log("Authentication enabled with user: " + user )
   var config={}
   config[user] = password
 
-  //Use body-parser for messageIn
-  app.use('/messageIn', bodyParser.urlencoded())
 
   //Auto-inject authentication for 'messageIn'
   app.use('/messageIn', function(req,res,next) {
@@ -162,8 +164,67 @@ app.get('/stop', function(req,res) {
 
 
 app.post('/messageIn', function(req, res) {
+  /*
+   if STOP track number and remove from monitor
+     monitor.removeMonitorNumber(number)
+   else monitor.playerSearch(req.body)
+     none: respond with error
+     > 5: indicate number of matches
+     > 1: show list
+     1: monitor.addMonitoredPlayer(name, number)
+   */
   console.log("BODY: ", req.body)
-  res.send('<Response><Message>Got It</Message></Response>')
+  var msg = req.body.Body
+  var number = req.body.From
+  if(!msg || msg.length < 4) {
+    res.send("<Response><Message>\nInvalid request. Send 'STOP' or 'Player Name'\n</Message></Response>")
+  } else if(msg.match(/^STOP/i)) {
+    monitor.removeMonitorNumber(number).then(function(names) {
+      if(names && names.length > 0) {
+        res.send('<Response><Message>No longer monitoring: ' + names.join(' ') + '</Message></Response>')
+      } else {
+        res.send('<Response><Message>No players being monitored with number '+number+'</Message></Response>')
+      }
+    }).catch(function(err) {
+      res.send('<Response><Message>Service error... admin has been notified.</Message></Response>')
+      monitor.notifyAdmin("Error trying to remove notifications for " + number + ": " + err.message)
+    })
+  } else {
+    monitor.playerSearch(msg).then(function(players) {
+      if(!players || players.length <= 0) {
+        monitor.notifyAdmin("From " + number + ": " + msg)
+        res.send("<Response><Message>Your message has been forwarded to the administrator</Message></Response>")
+        res.end()
+      } else if (players.length > 5) {
+        //Notify too many matches
+        res.send("<Response><Message>Your search for "+msg+" produced " + players.length + " results, try again with a more specific name.</Message></Response>")
+        res.end()
+      } else if (players.length > 1) {
+        res.send("<Response><Message>Your search for " + msg + " found " + players.join(", ") + " try again with a more specific name.</Message></Response>")
+        res.end()
+        //Notify multiple matches
+      } else {
+        //Subscribe
+        var playerName = players[0]
+        playerName = playerName.replace(/\s*\(..\)$/,'')
+        monitor.addMonitoredPlayer(playerName, number).then(function() {
+          res.end()
+        }, function(err) {
+          monitor.notifyAdmin(number + " message '"+msg+"' caused error: " + err.message)
+          if(err.showUser) {
+            res.send('<Response><Message>Error: '+err.message+'</Message></Response>')
+          } else {
+            res.send('<Response><Message>Service error... unable to subscribe at this time.</Message></Response>')
+          }
+        })
+      }
+    }, function(err) {
+      console.log("Error searching for players matching '"+msg+"': ", err)
+      monitor.notifyAdmin(number + " message '"+msg+"' caused error: " + err.message)
+      res.send('<Response><Message>Service error... unable to subscribe at this time.</Message></Response>')
+      res.end()
+    })
+  }
 })
 
 app.listen(port)
