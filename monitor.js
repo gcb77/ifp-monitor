@@ -2,9 +2,12 @@ var request = require('request')
 var sms = require('./sms.js')
 var scraper = require('./scraper.js')
 
+var Promise = require('bluebird')
+
 var fs = require('fs')
 
 var url = 'http://ifp.everguide.com/commander/tour/public/MatchList.aspx'
+// var url = 'http://localhost:8082/matches'
 var adminNumber = process.env['ADMIN_NUMBER']
 
 var serverData = {
@@ -30,23 +33,32 @@ function monitorStatus(name, status) {
 }
 
 function addMonitoredPlayer(name, number) {
-  if(!stats.started) {
-    throw new Error("Not Started!<br><a href='/'>Back</a>")
-  }
+  return new Promise(function(resolve, reject) {
+    if(!name) {
+      return reject(new Error("Invalid name: " + name))
+    }
 
-  //Send message to admin
-  sms.sendMessage(adminNumber, "Added " + name + " to monitor, sending notifications to " + number)
+    if(serverData.monitoredPlayers[name]) {
+      var err = new Error(name + " already monitored by " + serverData.monitoredPlayers[name].number)
+      err.showUser = true
+      return reject(err)
+    }
 
-  //Send message to subscriber
-  sms.sendMessage(number, name + " has been added to the IFP events monitor.  Respond with STOP if you wish to be removed.")
+    //Send message to admin
+    sms.sendMessage(adminNumber, "Added " + name + " to monitor, sending notifications to " + number)
 
-  //Track the monitored player
-  serverData.monitoredPlayers[name] = {
-    number: number,
-    enabled: true
-  }
-  fs.writeFileSync('./.players', JSON.stringify(serverData.monitoredPlayers))
-  stats.monitoredPlayers = Object.keys(serverData.monitoredPlayers)
+    //Send message to subscriber
+    sms.sendMessage(number, name + " has been added to the IFP events monitor.  Respond with REMOVE if you wish to be removed.")
+
+    //Track the monitored player
+    serverData.monitoredPlayers[name] = {
+      number: number,
+      enabled: true
+    }
+    fs.writeFileSync('./.players', JSON.stringify(serverData.monitoredPlayers))
+    stats.monitoredPlayers = Object.keys(serverData.monitoredPlayers)
+    resolve()
+  })
 }
 
 function monitorFunction() {
@@ -182,11 +194,82 @@ function getMonitoredPlayers() {
   return serverData.monitoredPlayers
 }
 
+function removeMonitoredNumber(number) {
+  return new Promise(function(resolve, reject) {
+    var removedNames = []
+    Object.keys(serverData.monitoredPlayers).forEach(function(name) {
+      if(number == serverData.monitoredPlayers[name].number) {
+        console.log("Removing " + name + " with number " + number)
+        delete serverData.monitoredPlayers[name]
+        removedNames.push(name)
+      }
+    })
+    resolve(removedNames)
+  })
+}
+
+function playerSearch(searchText) {
+  return new Promise(function (resolve, reject) {
+    //http://ifp.everguide.com/commander/internal/ComboStreamer.aspx?e=users&rcbID=R&rcbServerID=R&text=&comboText=&comboValue=&skin=VSNet&external=true&timeStamp=1492492664193
+    //http://ifp.everguide.com/commander/internal/ComboStreamer.aspx?e=users&rcbID=R&rcbServerID=R&text=barta&comboText=barta&comboValue=&skin=VSNet&external=true&timeStamp=1492492673453
+
+    var serverUrl = 'http://ifp.everguide.com'
+    // var serverUrl = 'http://localhost:8082'
+
+    var ts = Date.now()
+    var url = serverUrl + '/commander/internal/ComboStreamer.aspx?e=users&rcbID=R&rcbServerID=R&text='+searchText+'&comboText=&comboValue=&skin=VSNet&external=true&timeStamp='+ts
+
+    request({
+      url: url,
+      headers: {
+        'Content-Type': 'application/json; charset=utf-8'
+      }
+    }, function (err, response, body) {
+      if(err) {
+        console.log("Error searching player names: ", err)
+        reject(err)
+      } else {
+        try {
+          var resp = JSON.parse(body)
+
+          var matches = []
+
+          searchText = searchText.replace(/\s+/, '\\s+')
+          searchText = searchText.replace(/\(..\)/, '')
+          var re = new RegExp(searchText, 'i')
+
+          //Iterate over players
+          resp.Items.forEach(function(item) {
+            // console.log(item.Text)
+            if(re.test(item.Text)) {
+              matches.push(item.Text)
+            }
+          })
+
+          resolve(matches)
+        } catch(er) {
+          console.log("Unable to parse response when searching for player: ", er)
+          reject(er)
+        }
+        //console.log("Result: ", resp)
+      }
+    })
+
+  })
+}
+
+function notifyAdmin(msg) {
+  return sms.sendMessage(adminNumber, msg)
+}
+
 module.exports = {
   addMonitoredPlayer: addMonitoredPlayer,
   monitorStart: monitorStart,
   monitorStop: monitorStop,
   getStats: getStats,
   getMonitoredPlayers: getMonitoredPlayers,
-  setMonitorStatusForPlayer: monitorStatus
+  setMonitorStatusForPlayer: monitorStatus,
+  removeMonitorNumber: removeMonitoredNumber,
+  playerSearch: playerSearch,
+  notifyAdmin: notifyAdmin
 }
