@@ -211,6 +211,7 @@ app.post('/messageIn', function(req, res) {
         var playerName = players[0]
         playerName = playerName.replace(/\s*\(..\)$/,'')
         monitor.addMonitoredPlayer(playerName, number).then(function() {
+          res.send('<Response/>')
           res.end()
         }, function(err) {
           monitor.notifyAdmin(number + " message '"+msg+"' caused error: " + err.message)

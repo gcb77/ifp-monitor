@@ -234,8 +234,13 @@ function playerSearch(searchText) {
 
           var matches = []
 
+          //Replace any whitespace with the regular expression whitespace
           searchText = searchText.replace(/\s+/, '\\s+')
-          searchText = searchText.replace(/\(..\)/, '')
+          
+          //Remove the state part
+          searchText = searchText.replace(/\s*\(..\)\s*$/, '')
+          
+          //Create a regular expression from it
           var re = new RegExp(searchText, 'i')
 
           //Iterate over players
