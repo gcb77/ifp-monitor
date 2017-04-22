@@ -204,6 +204,10 @@ function removeMonitoredNumber(number) {
         removedNames.push(name)
       }
     })
+    
+    //Persist the new player structure
+    fs.writeFileSync('./.players', JSON.stringify(serverData.monitoredPlayers))
+    
     resolve(removedNames)
   })
 }
@@ -215,7 +219,10 @@ function playerSearch(searchText) {
 
     var serverUrl = 'http://ifp.everguide.com'
     // var serverUrl = 'http://localhost:8082'
-
+    
+    //Remove the state part since we can't search for it
+    searchText = searchText.replace(/\s*\(..\)\s*$/, '')
+    
     var ts = Date.now()
     var url = serverUrl + '/commander/internal/ComboStreamer.aspx?e=users&rcbID=R&rcbServerID=R&text='+searchText+'&comboText=&comboValue=&skin=VSNet&external=true&timeStamp='+ts
 
@@ -236,10 +243,7 @@ function playerSearch(searchText) {
 
           //Replace any whitespace with the regular expression whitespace
           searchText = searchText.replace(/\s+/, '\\s+')
-          
-          //Remove the state part
-          searchText = searchText.replace(/\s*\(..\)\s*$/, '')
-          
+         
           //Create a regular expression from it
           var re = new RegExp(searchText, 'i')
 
