@@ -2,6 +2,7 @@ var express = require('express')
 var basicAuth = require('express-basic-auth')
 var bodyParser = require('body-parser')
 var fs = require('fs')
+var winston = require('winston')
 
 var scraper = require('./scraper.js')
 var monitor = require('./monitor.js')
@@ -17,7 +18,7 @@ app.use('/messageIn', bodyParser.urlencoded({
 }))
 
 if(user && password) {
-  console.log("Authentication enabled with user: " + user )
+  winston.info("Authentication enabled with user: " + user )
   var config={}
   config[user] = password
 
@@ -35,7 +36,7 @@ if(user && password) {
     unauthorizedResponse: getUnauthorizedResponse
   }))
 } else {
-  console.warn("No SECURE_USER or SECURE_PASSWORD provided, running with no authentication!")
+  winston.warn("No SECURE_USER or SECURE_PASSWORD provided, running with no authentication!")
 }
 
 var port = 8081
@@ -153,12 +154,14 @@ app.get('/addPlayer', function(req,res) {
 })
 
 app.get('/start', function(req,res) {
+  winston.info("START called to monitor users")
   monitor.monitorStart()
   res.redirect('/')
   // res.send("Started<br><a href='/'>Home</a>")
 })
 
 app.get('/stop', function(req,res) {
+  winston.info("STOP called to monitor users")
   monitor.monitorStop()
   res.redirect('/')
   // res.send("Stopped")
@@ -175,7 +178,6 @@ app.post('/messageIn', function(req, res) {
      > 1: show list
      1: monitor.addMonitoredPlayer(name, number)
    */
-  // console.log("BODY: ", req.body)
   fs.writeFileSync('./messages/'+Date.now()+'.txt', JSON.stringify(req.body))
   var msg = req.body.Body
   var number = req.body.From
@@ -223,7 +225,7 @@ app.post('/messageIn', function(req, res) {
         })
       }
     }, function(err) {
-      console.log("Error searching for players matching '"+msg+"': ", err)
+      winston.error("Error searching for players matching '"+msg+"': ", err)
       monitor.notifyAdmin(number + " message '"+msg+"' caused error: " + err.message)
       res.send('<Response><Message>Service error... unable to subscribe at this time.</Message></Response>')
       res.end()
@@ -233,6 +235,6 @@ app.post('/messageIn', function(req, res) {
 
 app.listen(port)
 
-console.log("Program running, monitor currently stopped...")
+winston.info("Program running, monitor currently stopped...")
 
 exports = module.exports = app;

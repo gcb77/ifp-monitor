@@ -1,3 +1,4 @@
+var winston = require('winston')
 // Twilio Credentials
 var accountSid = process.env['TWILIO_ACCOUNT_SID']
 var authToken = process.env['TWILIO_ACCOUNT_AUTH']
@@ -24,7 +25,7 @@ var sendMessage = function(number, message) {
       body: message,
     }, function (err, message) {
       if(err) {
-        console.log("Error sending SMS message: ", err)
+        winston.error("Error sending SMS message: ", err)
         reject(err)
       } else {
         resolve()

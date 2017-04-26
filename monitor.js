@@ -1,6 +1,7 @@
 var request = require('request')
 var sms = require('./sms.js')
 var scraper = require('./scraper.js')
+var winston = require('winston')
 
 var Promise = require('bluebird')
 
@@ -80,7 +81,7 @@ function monitorFunction() {
 
         //For testing, allow an override html file
         if(process.env['IFPMON_DATA_OVERRIDE']){
-          console.log("USING OVERRIDE: " + process.env['IFPMON_DATA_OVERRIDE'])
+          winston.warn("USING OVERRIDE: " + process.env['IFPMON_DATA_OVERRIDE'])
           html = fs.readFileSync(process.env['IFPMON_DATA_OVERRIDE'])
         }
 
@@ -111,7 +112,7 @@ function monitorFunction() {
             var message = "Table " + match.table + " " + match.event + " " + match.team1 + " vs " + match.team2 + ' for ' + match.forPosition
             if(serverData.monitoredPlayers[player].enabled) {
               var dt = new Date()
-              console.log(dt + " notifying " + player + "(" + serverData.monitoredPlayers[player].number + ") " + message)
+              winston.info(dt + " notifying " + player + "(" + serverData.monitoredPlayers[player].number + ") " + message)
               sms.sendMessage(serverData.monitoredPlayers[player].number, message)
               stats.notificationsSent += 1
               stats.notificationLog.push(
@@ -121,7 +122,7 @@ function monitorFunction() {
                 player + " (" + serverData.monitoredPlayers[player].number + ") - " +
                 message)
             } else {
-              console.log("Player " + player + " is disabled, not sending notification")
+              winston.warn("Player " + player + " is disabled, not sending notification")
             }
           }
         })
@@ -152,7 +153,7 @@ function monitorFunction() {
       }
     })
   } else {
-    console.log("No players to monitor...")
+    //winston.info("No players to monitor...")
   }
 }
 
@@ -163,7 +164,7 @@ function monitorStart() {
   try {
     var savedPlayers = fs.readFileSync('./.players')
     serverData.monitoredPlayers = JSON.parse(savedPlayers)
-    console.log("Monitoring: " + JSON.stringify(serverData.monitoredPlayers))
+    winston.info("Monitoring: " + JSON.stringify(serverData.monitoredPlayers))
     stats.monitoredPlayers = Object.keys(serverData.monitoredPlayers)
   } catch(err) { }
 
@@ -199,7 +200,7 @@ function removeMonitoredNumber(number) {
     var removedNames = []
     Object.keys(serverData.monitoredPlayers).forEach(function(name) {
       if(number == serverData.monitoredPlayers[name].number) {
-        console.log("Removing " + name + " with number " + number)
+        winston.info("Removing " + name + " with number " + number)
         delete serverData.monitoredPlayers[name]
         removedNames.push(name)
       }
@@ -233,7 +234,7 @@ function playerSearch(searchText) {
       }
     }, function (err, response, body) {
       if(err) {
-        console.log("Error searching player names: ", err)
+        winston.error("Error searching player names: ", err)
         reject(err)
       } else {
         try {
@@ -257,7 +258,7 @@ function playerSearch(searchText) {
 
           resolve(matches)
         } catch(er) {
-          console.log("Unable to parse response when searching for player: ", er)
+          winston.error("Unable to parse response when searching for player: ", er)
           reject(er)
         }
         //console.log("Result: ", resp)
