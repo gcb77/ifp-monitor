@@ -181,6 +181,7 @@ app.post('/messageIn', function(req, res) {
   fs.writeFileSync('./messages/'+Date.now()+'.txt', JSON.stringify(req.body))
   var msg = req.body.Body
   var number = req.body.From
+  number = number.replace('+1','')
   if(!msg || msg.length < 4) {
     res.send("<Response><Message>\nInvalid request. Send 'REMOVE' or 'Player Name'\n</Message></Response>")
   } else if(msg.match(/^REMOVE/i)) {

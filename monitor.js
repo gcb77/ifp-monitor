@@ -7,9 +7,12 @@ var Promise = require('bluebird')
 
 var fs = require('fs')
 
-var url = 'http://ifp.everguide.com/commander/tour/public/MatchList.aspx'
-// var url = 'http://localhost:8082/matches'
+var serverUrl = 'http://ifp.everguide.com'
 var adminNumber = process.env['ADMIN_NUMBER']
+
+if(process.env.SERVER_URL) {
+  serverUrl = process.env.SERVER_URL
+}
 
 var serverData = {
   monitoredPlayers: {},
@@ -68,7 +71,7 @@ function monitorFunction() {
   if(Object.keys(serverData.monitoredPlayers).length > 0) {
 
     //Make request to page
-    request(url, function (err, response, html) {
+    request(serverUrl + '/commander/tour/public/MatchList.aspx', function (err, response, html) {
 
       //Check return status
       if (!err && response.statusCode == 200) {
@@ -218,9 +221,6 @@ function playerSearch(searchText) {
     //http://ifp.everguide.com/commander/internal/ComboStreamer.aspx?e=users&rcbID=R&rcbServerID=R&text=&comboText=&comboValue=&skin=VSNet&external=true&timeStamp=1492492664193
     //http://ifp.everguide.com/commander/internal/ComboStreamer.aspx?e=users&rcbID=R&rcbServerID=R&text=barta&comboText=barta&comboValue=&skin=VSNet&external=true&timeStamp=1492492673453
 
-    var serverUrl = 'http://ifp.everguide.com'
-    // var serverUrl = 'http://localhost:8082'
-    
     //Remove the state part since we can't search for it
     searchText = searchText.replace(/\s*\(..\)\s*$/, '')
     
