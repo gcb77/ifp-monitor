@@ -181,6 +181,12 @@ app.post('/messageIn', function(req, res) {
   fs.writeFileSync('./messages/'+Date.now()+'.txt', JSON.stringify(req.body))
   var msg = req.body.Body
   var number = req.body.From
+
+  //Remove whitespace before and after the message
+  if(msg) {
+    msg = msg.trim()
+  }
+
   number = number.replace('+1','')
   if(!msg || msg.length < 4) {
     res.send("<Response><Message>\nInvalid request. Send 'REMOVE' or 'Player Name'\n</Message></Response>")
@@ -237,5 +243,6 @@ app.post('/messageIn', function(req, res) {
 app.listen(port)
 
 winston.info("Program running, monitor currently stopped...")
+console.log("Program running, monitor currently stopped...")
 
 exports = module.exports = app;
