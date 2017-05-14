@@ -7,8 +7,15 @@ var Promise = require('bluebird')
 
 var fs = require('fs')
 
+var playersFileName = 'tmp/players.json'
+var notificationsFileName = 'tmp/notifications.json'
+
+var Datastore = require('nedb')
+
 var serverUrl = 'http://ifp.everguide.com'
 var adminNumber = process.env['ADMIN_NUMBER']
+
+var playersDatabase = new Datastore({filename: 'db/players.db', autoload: true})
 
 if(process.env.SERVER_URL) {
   serverUrl = process.env.SERVER_URL
@@ -33,15 +40,15 @@ function monitorStatus(name, status) {
   if(serverData.monitoredPlayers[name]) {
     serverData.monitoredPlayers[name].enabled = status
   }
-  fs.writeFileSync('./.players', JSON.stringify(serverData.monitoredPlayers))
+  fs.writeFileSync(playersFileName, JSON.stringify(serverData.monitoredPlayers))
 }
 
 function addMonitoredPlayer(name, number) {
-  return new Promise(function(resolve, reject) {
-    if(!name) {
-      return reject(new Error("Invalid name: " + name))
-    }
+  if(!name) {
+    return Promise.reject(new Error("Invalid name: " + name))
+  }
 
+  let addToMonitor = new Promise(function(resolve, reject) {
     if(serverData.monitoredPlayers[name]) {
       var err = new Error(name + " already monitored by " + serverData.monitoredPlayers[name].number)
       err.showUser = true
@@ -59,9 +66,36 @@ function addMonitoredPlayer(name, number) {
       number: number,
       enabled: true
     }
-    fs.writeFileSync('./.players', JSON.stringify(serverData.monitoredPlayers))
+    fs.writeFileSync(playersFileName, JSON.stringify(serverData.monitoredPlayers))
     stats.monitoredPlayers = Object.keys(serverData.monitoredPlayers)
     resolve()
+  })
+
+  let addToCatalog = new Promise(function(resolve,reject) {
+    playersDatabase.findOne({name: name}, function(err, result) {
+      if (err) {
+        winston.error("Unable to query players database!", err)
+        reject("Unable to query players database: " + err)
+      } else if (result) {
+        if (result.number != number) {
+          result.number = number
+        }
+        playersDatabase.update({_id: result._id}, result, {}, function (err, res) {
+          resolve(res)
+        })
+      } else {
+        playersDatabase.insert({
+          name: name,
+          number: number
+        }, function (err, res) {
+          resolve(res)
+        })
+      }
+    })
+  })
+
+  return addToCatalog.then(function() {
+    return addToMonitor
   })
 }
 
@@ -80,12 +114,6 @@ function monitorFunction() {
         if(notifiedProblems) {
           notifiedProblems = false
           sms.sendMessage(adminNumber, "Functionality restored")
-        }
-
-        //For testing, allow an override html file
-        if(process.env['IFPMON_DATA_OVERRIDE']){
-          winston.warn("USING OVERRIDE: " + process.env['IFPMON_DATA_OVERRIDE'])
-          html = fs.readFileSync(process.env['IFPMON_DATA_OVERRIDE'])
         }
 
         //Flag all current notifications as potentially ready to remove
@@ -139,7 +167,7 @@ function monitorFunction() {
         })
 
         //Save the notifications so we don't resend
-        fs.writeFileSync('./.notifications', JSON.stringify(serverData.notifiedPlayers))
+        fs.writeFileSync(notificationsFileName, JSON.stringify(serverData.notifiedPlayers))
       } else {
         //We've had a failure
 
@@ -165,14 +193,14 @@ function monitorStart() {
     return
   }
   try {
-    var savedPlayers = fs.readFileSync('./.players')
+    var savedPlayers = fs.readFileSync(playersFileName)
     serverData.monitoredPlayers = JSON.parse(savedPlayers)
     winston.info("Monitoring: " + JSON.stringify(serverData.monitoredPlayers))
     stats.monitoredPlayers = Object.keys(serverData.monitoredPlayers)
   } catch(err) { }
 
   try {
-    var notifications = fs.readFileSync('./.notifications')
+    var notifications = fs.readFileSync(notificationsFileName)
     serverData.notifiedPlayers = JSON.parse(notifications)
   } catch(err) { }
 
@@ -210,7 +238,7 @@ function removeMonitoredNumber(number) {
     })
     
     //Persist the new player structure
-    fs.writeFileSync('./.players', JSON.stringify(serverData.monitoredPlayers))
+    fs.writeFileSync(playersFileName, JSON.stringify(serverData.monitoredPlayers))
     
     resolve(removedNames)
   })

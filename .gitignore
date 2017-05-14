@@ -7,6 +7,6 @@ screenlog*
 .players
 .notifications
 messages/*.txt
-tmp
+tmp/*
 env.js
 *.log
