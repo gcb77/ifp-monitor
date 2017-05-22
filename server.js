@@ -96,9 +96,13 @@ app.get('/log', function(req, res) {
 
   var stats = monitor.getStats()
 
-  stats.notificationLog.forEach(function(log) {
-    send.push('<div class="well well-sm">'+log+'</div><br>')
-  })
+  //Show last 100 notifications in reverse order
+  var len = stats.notificationLog.length
+  for(var i = 1; i < 100; i+=1){
+    if(len-i >= 0) {
+      send.push('<div class="well well-sm">'+stats.notificationLog[len-i]+'</div><br>')
+    }
+  }
 
   res.send(send.join('\n'))
 })
@@ -112,11 +116,11 @@ app.get('/players', function(req, res) {
   send.push('<form method="GET" action="addPlayer">')
   send.push('  <div class="form-inline">')
   send.push('    <div class="form-group">')
-  send.push('      <div class="col-xs-5 text-nowrap">')
+  send.push('      <div class="col-sm-5 text-nowrap">')
   send.push('NAME: <input type=text name="name">')
-  send.push('      </div><div class="col-xs-5 text-nowrap">')
+  send.push('      </div><div class="col-sm-5 text-nowrap">')
   send.push('NUMBER: <input type=text name="number">')
-  send.push('      </div><div class="col-xs-2">')
+  send.push('      </div><div class="col-sm-2">')
   send.push('<buton type="submit" class="btn btn-primary">Add</input>')
   send.push('      </div>')
   send.push('    </div>')
@@ -256,7 +260,7 @@ app.get('/playerDb', function(req, res) {
 
   monitor.getPlayerDb().then(function(data) {
     data.forEach(function(player) {
-      send.push("<div class='row'>")
+      send.push("<div class='well row'>")
 
       send.push(" <div class='col col-xs-4'>")
       send.push(player.name)
