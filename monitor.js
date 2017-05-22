@@ -36,12 +36,60 @@ var stats = {
   notificationLog: []
 }
 
+function loadSavedPlayers() {
+  try {
+    var savedPlayers = fs.readFileSync(playersFileName)
+    serverData.monitoredPlayers = JSON.parse(savedPlayers)
+    winston.info("Monitoring: " + JSON.stringify(serverData.monitoredPlayers))
+    stats.monitoredPlayers = Object.keys(serverData.monitoredPlayers)
+
+    var promises = []
+    Object.keys(serverData.monitoredPlayers).forEach(function(name) {
+      promises.push(updatePlayerDb(name, serverData.monitoredPlayers[name].number))
+    })
+    Promise.all(promises).then(function() {
+      winston.info("Saved player list synchronized.")
+    })
+  } catch(err) {
+    winston.warn("Unable to read saved players file")
+  }
+}
+
+//Load saved players at startup
+loadSavedPlayers()
+
 function monitorStatus(name, status) {
   if(serverData.monitoredPlayers[name]) {
     serverData.monitoredPlayers[name].enabled = status
   }
   fs.writeFileSync(playersFileName, JSON.stringify(serverData.monitoredPlayers))
 }
+
+function updatePlayerDb(name, number) {
+  return new Promise(function(resolve,reject) {
+    playersDatabase.findOne({name: name}, function(err, result) {
+      if (err) {
+        winston.error("Unable to query players database!", err)
+        reject("Unable to query players database: " + err)
+      } else if (result) {
+        if (result.number != number) {
+          result.number = number
+        }
+        playersDatabase.update({_id: result._id}, result, {}, function (err, res) {
+          resolve(res)
+        })
+      } else {
+        playersDatabase.insert({
+          name: name,
+          number: number
+        }, function (err, res) {
+          resolve(res)
+        })
+      }
+    })
+  })
+}
+
 
 function addMonitoredPlayer(name, number) {
   if(!name) {
@@ -71,30 +119,7 @@ function addMonitoredPlayer(name, number) {
     resolve()
   })
 
-  let addToCatalog = new Promise(function(resolve,reject) {
-    playersDatabase.findOne({name: name}, function(err, result) {
-      if (err) {
-        winston.error("Unable to query players database!", err)
-        reject("Unable to query players database: " + err)
-      } else if (result) {
-        if (result.number != number) {
-          result.number = number
-        }
-        playersDatabase.update({_id: result._id}, result, {}, function (err, res) {
-          resolve(res)
-        })
-      } else {
-        playersDatabase.insert({
-          name: name,
-          number: number
-        }, function (err, res) {
-          resolve(res)
-        })
-      }
-    })
-  })
-
-  return addToCatalog.then(function() {
+  return updatePlayerDb(name, number).then(function() {
     return addToMonitor
   })
 }
@@ -192,12 +217,6 @@ function monitorStart() {
   if(monitorInterval) {
     return
   }
-  try {
-    var savedPlayers = fs.readFileSync(playersFileName)
-    serverData.monitoredPlayers = JSON.parse(savedPlayers)
-    winston.info("Monitoring: " + JSON.stringify(serverData.monitoredPlayers))
-    stats.monitoredPlayers = Object.keys(serverData.monitoredPlayers)
-  } catch(err) { }
 
   try {
     var notifications = fs.readFileSync(notificationsFileName)
@@ -233,6 +252,10 @@ function removeMonitoredNumber(number) {
       if(number == serverData.monitoredPlayers[name].number) {
         winston.info("Removing " + name + " with number " + number)
         delete serverData.monitoredPlayers[name]
+        var idx = stats.monitoredPlayers.indexOf(name)
+        if(idx >= 0) {
+          stats.monitoredPlayers.splice(idx,1)
+        }
         removedNames.push(name)
       }
     })
@@ -296,6 +319,18 @@ function playerSearch(searchText) {
   })
 }
 
+function getPlayerDb() {
+  return new Promise(function(resolve, reject) {
+    playersDatabase.find({}, function(err, data) {
+      if(err) {
+        reject(err)
+      } else {
+        resolve(data)
+      }
+    })
+  })
+}
+
 function notifyAdmin(msg) {
   return sms.sendMessage(adminNumber, msg)
 }
@@ -309,5 +344,6 @@ module.exports = {
   setMonitorStatusForPlayer: monitorStatus,
   removeMonitorNumber: removeMonitoredNumber,
   playerSearch: playerSearch,
+  getPlayerDb: getPlayerDb,
   notifyAdmin: notifyAdmin
 }
