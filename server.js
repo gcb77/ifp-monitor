@@ -55,9 +55,9 @@ app.get('/', function(req, res) {
   send.push(fs.readFileSync('head.html'))
   send.push(fs.readFileSync('nav.html'))
   if(monitor.getStats().started) {
-    send.push("<a href='/stop' class='btn'>Stop</a><br>")
+    send.push("<a href='/stop' class='btn btn-danger'>Stop</a><br>")
   } else {
-    send.push("<a href='/start' class='btn'>Start</a><br>")
+    send.push("<a href='/start' class='btn btn-success'>Start</a><br>")
   }
   send.push("<hr>Monitoring: ")
   send.push(JSON.stringify(monitor.getStats().monitoredPlayers))
@@ -110,13 +110,17 @@ app.get('/players', function(req, res) {
   send.push(fs.readFileSync('nav.html'))
 
   send.push('<form method="GET" action="addPlayer">')
-  send.push('<div class="col-xs-5">')
+  send.push('  <div class="form-inline">')
+  send.push('    <div class="form-group">')
+  send.push('      <div class="col-xs-5 text-nowrap">')
   send.push('NAME: <input type=text name="name">')
-  send.push('</div><div class="col-xs-5">')
+  send.push('      </div><div class="col-xs-5 text-nowrap">')
   send.push('NUMBER: <input type=text name="number">')
-  send.push('</div><div class="col-xs-2">')
-  send.push('<input type="submit" class="btn">')
-  send.push('</div>')
+  send.push('      </div><div class="col-xs-2">')
+  send.push('<buton type="submit" class="btn btn-primary">Add</input>')
+  send.push('      </div>')
+  send.push('    </div>')
+  send.push('  </div>')
   send.push('</form><br><hr>')
 
   var players = monitor.getMonitoredPlayers()
@@ -223,6 +227,7 @@ app.post('/messageIn', function(req, res) {
           res.send('<Response/>')
           res.end()
         }, function(err) {
+          winston.error("Message: " + msg + " caused error " + err)
           monitor.notifyAdmin(number + " message '"+msg+"' caused error: " + err.message)
           if(err.showUser) {
             res.send('<Response><Message>Error: '+err.message+'</Message></Response>')
@@ -238,6 +243,50 @@ app.post('/messageIn', function(req, res) {
       res.end()
     })
   }
+})
+
+app.get('/playerDb', function(req, res) {
+  var send = []
+
+  send.push(fs.readFileSync('head.html'))
+  send.push(fs.readFileSync('nav.html'))
+
+  var monitoredPlayers = monitor.getMonitoredPlayers()
+  var playerNames = Object.keys(monitoredPlayers)
+
+  monitor.getPlayerDb().then(function(data) {
+    data.forEach(function(player) {
+      send.push("<div class='row'>")
+
+      send.push(" <div class='col col-xs-4'>")
+      send.push(player.name)
+      send.push(" </div>")
+
+      send.push(" <div class='col col-xs-4'>")
+      send.push(player.number)
+      send.push(" </div>")
+
+      send.push(" <div class='col col-xs-4'>")
+      if(!playerNames.includes(player.name)) {
+        send.push(
+          "<a class='btn btn-info' href='/addPlayer?name="
+          + encodeURIComponent(player.name)
+          + "&number="
+          + encodeURIComponent(player.number)
+          + "'>Add</a>")
+      }
+      send.push(" </div>")
+
+      send.push("</div>")
+    })
+    res.send(send.join(''))
+    res.end()
+  }, function(err) {
+    winston.error("Failed to query player database: ", err)
+    send.push('ERROR!')
+    res.send(send.join(''))
+    res.end()
+  })
 })
 
 app.listen(port)
