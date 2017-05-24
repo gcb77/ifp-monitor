@@ -12,7 +12,7 @@ app.get('/commander/tour/public/MatchList.aspx', function(req, res) {
 })
 
 app.get('/commander/internal/ComboStreamer.aspx', function(req, res) {
-  console.log("LOCAL SERVER: received player query for " + req.body)
+  console.log("LOCAL SERVER: received player query, sending canned message")
   res.send(fs.readFileSync('./users_sample_data.txt'))
   res.end()
 })

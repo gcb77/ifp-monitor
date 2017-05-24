@@ -23,7 +23,8 @@ if(process.env.SERVER_URL) {
 
 var serverData = {
   monitoredPlayers: {},
-  notifiedPlayers: {}
+  notifiedPlayers: {},
+  registrationResponse: '$player registered, you will receive messages when called for a match. Send REMOVE to be removed from this list.'
 }
 
 var monitorInterval = undefined
@@ -104,10 +105,11 @@ function addMonitoredPlayer(name, number) {
     }
 
     //Send message to admin
+    var responseStr = serverData.registrationResponse.replace('$player', name)
     sms.sendMessage(adminNumber, "Added " + name + " to monitor, sending notifications to " + number)
 
     //Send message to subscriber
-    sms.sendMessage(number, name + " has been added to the IFP events monitor.  Respond with REMOVE if you wish to be removed.")
+    sms.sendMessage(number, responseStr)
 
     //Track the monitored player
     serverData.monitoredPlayers[name] = {
@@ -325,7 +327,16 @@ function getPlayerDb() {
       if(err) {
         reject(err)
       } else {
-        resolve(data)
+        // sort the players alphabetically by name
+        resolve(data.sort(function(a, b) {
+          if(a.name < b.name) {
+            return -1
+          }
+          if(a.name > b.name) {
+            return 1
+          }
+          return 0
+        }))
       }
     })
   })
@@ -345,5 +356,11 @@ module.exports = {
   removeMonitorNumber: removeMonitoredNumber,
   playerSearch: playerSearch,
   getPlayerDb: getPlayerDb,
-  notifyAdmin: notifyAdmin
+  notifyAdmin: notifyAdmin,
+  getRegistrationResponse: function() {
+    return serverData.registrationResponse
+  },
+  setRegistrationResponse: function(msg) {
+    serverData.registrationResponse = msg
+  }
 }

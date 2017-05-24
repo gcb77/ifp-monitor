@@ -13,7 +13,7 @@ var password = process.env['SECURE_PASSWORD']
 var app = express()
 
 //Use body-parser for messageIn
-app.use('/messageIn', bodyParser.urlencoded({
+app.use(['/messageIn','/setRegistrationResponse'], bodyParser.urlencoded({
   extended: true
 }))
 
@@ -60,8 +60,33 @@ app.get('/', function(req, res) {
     send.push("<a href='/start' class='btn btn-success'>Start</a><br>")
   }
   send.push("<hr>Monitoring: ")
-  send.push(JSON.stringify(monitor.getStats().monitoredPlayers))
+  send.push(JSON.stringify(monitor.getStats().monitoredPlayers.length))
+  send.push(" players")
+
+  send.push('<hr>')
+  send.push('<form method="POST" action="/setRegistrationResponse">')
+  send.push('<div class="row">')
+
+  send.push('<div class="col col-sm-8">')
+  // send.push('<textarea name="message" style="width: 100%" rows="5">')
+  send.push('<input type="text" style="width: 100%" name="message" value="')
+  send.push(monitor.getRegistrationResponse())
+  send.push('">')
+  // send.push('</textarea>')
+  send.push('</div>')
+
+  send.push('<div class="col col-sm-4">')
+  send.push('<input type="submit" class="btn btn-primary" value="Update">')
+  send.push('</div>')
+
+  send.push('</div>')
+  send.push('</form>')
   res.send(send.join(''))
+})
+
+app.post('/setRegistrationResponse', function(req, res) {
+  monitor.setRegistrationResponse(req.body.message)
+  res.redirect('/')
 })
 
 app.get('/monitor', function(req,res) {
@@ -212,8 +237,8 @@ app.post('/messageIn', function(req, res) {
   } else {
     monitor.playerSearch(msg).then(function(players) {
       if(!players || players.length <= 0) {
-        monitor.notifyAdmin("From " + number + ": " + msg)
-        res.send("<Response><Message>Your message has been forwarded to the administrator</Message></Response>")
+        monitor.notifyAdmin("From " + number + " Not Found : " + msg)
+        res.send("<Response><Message>Your message could not be matched to a player in the IFP system, please verify the name and try again.</Message></Response>")
         res.end()
       } else if (players.length > 5) {
         //Notify too many matches
