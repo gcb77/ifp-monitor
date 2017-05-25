@@ -17,6 +17,8 @@ var adminNumber = process.env['ADMIN_NUMBER']
 
 var playersDatabase = new Datastore({filename: 'db/players.db', autoload: true})
 
+var matchesInProgress = {}
+
 if(process.env.SERVER_URL) {
   serverUrl = process.env.SERVER_URL
 }
@@ -126,6 +128,39 @@ function addMonitoredPlayer(name, number) {
   })
 }
 
+// Keep track of when matches start/end
+function trackMatchProgress(matches_list) {
+  Object.keys(matchesInProgress).forEach(function(key) {
+    matchesInProgress[key].flaggedForRemove = true
+  })
+
+  //Utility to make a key from the match to find it in the current list
+  let makeKey = function(match) {
+    return [match.event, match.table, match.team1, match.team2, match.forPosition].join(', ')
+  }
+
+  //Flag matches still in progress and add new matches
+  matches_list.forEach(function(currentMatch) {
+    let key = makeKey(currentMatch)
+    if(matchesInProgress[key]) {
+      matchesInProgress[key].flaggedForRemove = false
+    } else {
+      currentMatch.startTime = Date.now()
+      matchesInProgress[key] = currentMatch
+    }
+  })
+
+  //Remove finished matches
+  Object.keys(matchesInProgress).forEach(function(key) {
+    if(matchesInProgress[key].flaggedForRemove) {
+      var m = matchesInProgress[key]
+      winston.info("MATCH TRACK " + key + ', ' + m.startTime + ', ' + Date.now())
+      delete matchesInProgress[key]
+    }
+  })
+
+}
+
 function monitorFunction() {
 
   //Only run if there are players to monitor
@@ -150,6 +185,7 @@ function monitorFunction() {
 
         //Find the matches we are interested in
         var currentMatches = scraper.findMatches(html)
+        trackMatchProgress(currentMatches)
         stats.currentMatches = currentMatches
 
         //Use the scraping utility to find the players currently called up

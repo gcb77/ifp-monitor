@@ -320,7 +320,7 @@ app.get('/playerDb', function(req, res) {
 
 app.listen(port)
 
-winston.info("Program running, monitor currently stopped...")
-console.log("Program running, monitor currently stopped...")
+winston.info("Program running on "+port+", monitor currently stopped...")
+console.log("Program running on "+port+", monitor currently stopped...")
 
 exports = module.exports = app;
