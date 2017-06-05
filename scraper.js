@@ -34,9 +34,10 @@ var findPlayers = function(matches, players) {
   var playersFound = {}
   matches.forEach(function(match) {
     players.forEach(function(player) {
-      if(match.team1.indexOf(player) >= 0) {
+      var re = new RegExp('\\b'+player+'\\b')
+      if(re.test(match.team1)) {
         playersFound[player] = match
-      } else if(match.team2.indexOf(player) >= 0) {
+      } else if(re.test(match.team2)) {
         playersFound[player] = match
       }
     })

@@ -146,7 +146,7 @@ app.get('/players', function(req, res) {
   send.push('      </div><div class="col-sm-5 text-nowrap">')
   send.push('NUMBER: <input type=text name="number">')
   send.push('      </div><div class="col-sm-2">')
-  send.push('<buton type="submit" class="btn btn-primary">Add</input>')
+  send.push('<input type="submit" class="btn btn-primary">Add</input>')
   send.push('      </div>')
   send.push('    </div>')
   send.push('  </div>')
