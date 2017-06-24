@@ -1,6 +1,6 @@
 {
   "name": "ifp-monitor",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "description": "Web service that monitors matches in progress at an IFP (International Foosball Promotions) event and sends notification messages to players who are being called.",
   "author": "George Barta <george.barta@gmail.com>",
   "dependencies": {
@@ -14,5 +14,12 @@
     "twilio": "^2.11.1",
     "winston": "^2.3.1"
   },
-  "license": "GPL-3.0"
+  "scripts": {
+    "test": "mocha"
+  },
+  "license": "GPL-3.0",
+  "devDependencies": {
+    "mocha": "^3.4.2",
+    "rewire": "^2.5.2"
+  }
 }

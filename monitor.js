@@ -311,6 +311,7 @@ function playerSearch(searchText) {
     //http://ifp.everguide.com/commander/internal/ComboStreamer.aspx?e=users&rcbID=R&rcbServerID=R&text=barta&comboText=barta&comboValue=&skin=VSNet&external=true&timeStamp=1492492673453
 
     //Remove the state part since we can't search for it
+    let originalSearchText = searchText.trim()
     searchText = searchText.replace(/\s*\(..\)\s*$/, '')
     
     var ts = Date.now()
@@ -345,7 +346,33 @@ function playerSearch(searchText) {
             }
           })
 
-          resolve(matches)
+
+          //If multiple matches, but one matches exactly, use it
+          if(matches.indexOf(originalSearchText) >= 0) {
+            matches = [matches.indexOf(originalSearchText)]
+          }
+
+          //If nothing matched attempt to break down the name and try again
+          if(matches.length === 0) {
+            let parts = originalSearchText.split(/\s+/)
+            // If its a bunch of words its probably not a name
+            if(parts.length > 1 && parts.length < 4) {
+
+              // parts.pop()
+              // console.log("Searching for " + parts.join(' '))
+              playerSearch(originalSearchText.replace(/^[^\s*]+/,'')).then(function(res) {
+                console.log("GOT: ", res)
+                resolve(res)
+              }, function(err) {
+                reject(err)
+              })
+            } else {
+              resolve([])
+            }
+          } else {
+            resolve(matches)
+          }
+
         } catch(er) {
           winston.error("Unable to parse response when searching for player: ", er)
           reject(er)
