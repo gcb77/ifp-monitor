@@ -215,6 +215,10 @@ app.post('/messageIn', function(req, res) {
   var msg = req.body.Body
   var number = req.body.From
 
+  if(!number || !msg) {
+    res.send('<Response><Message>Invalid Request</Message></Response>')
+  }
+
   //Remove whitespace before and after the message
   if(msg) {
     msg = msg.trim()
@@ -251,7 +255,6 @@ app.post('/messageIn', function(req, res) {
       } else {
         //Subscribe
         var playerName = players[0]
-        playerName = playerName.replace(/\s*\(..\)$/,'')
         monitor.addMonitoredPlayer(playerName, number).then(function() {
           res.send('<Response/>')
           res.end()

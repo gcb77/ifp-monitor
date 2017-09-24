@@ -72,5 +72,41 @@ describe('Monitor', function() {
         assert.equal(err.message, 'null')
       })
     })
+
+    it('should properly match CAN players', function() {
+      requestMockData.error = null
+      requestMockData.body = JSON.stringify({Items: [
+        {Text: 'PLAYER ONE (CAN)'},
+        {Text: 'first2 last'}]})
+      return monitor.playerSearch('PLAYER').then(function (res) {
+        assert.equal(res.length, 1)
+        assert.equal(res[0], 'PLAYER ONE')
+      }, function (err) {
+        assert.equal(err.message, 'null')
+      })
+    })
+
+    it('should select the right player when multiple are found', function() {
+      requestMockData.error = null
+      requestMockData.body = JSON.stringify({Items: [
+        {Text: 'George Barta (WA)'},
+        {Text: 'George Barta (CO)'},
+        ]})
+      monitor.playerSearch('George Barta').then(function (res) {
+        assert.equal(res.length, 2)
+        assert.equal(res[0], 'George Barta (WA)')
+        assert.equal(res[1], 'George Barta (CO)')
+      }, function (err) {
+        assert.equal(err.message, 'null')
+      })
+      monitor.playerSearch('George Barta (WA)').then(function (res) {
+        console.log(res)
+        assert.equal(res.length, 1)
+        assert.equal(res[0], 'George Barta')
+      }, function (err) {
+        assert.equal(err.message, 'null')
+      })
+
+    })
   })
 })

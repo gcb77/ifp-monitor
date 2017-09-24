@@ -19,6 +19,8 @@ var playersDatabase = new Datastore({filename: 'db/players.db', autoload: true})
 
 var matchesInProgress = {}
 
+var stripStateRegEx = /\s*\(.+\)\s*$/
+
 if(process.env.SERVER_URL) {
   serverUrl = process.env.SERVER_URL
 }
@@ -312,10 +314,7 @@ function playerSearch(searchText) {
 
     //Remove the state part since we can't search for it
     let originalSearchText = searchText.trim()
-    searchText = searchText.replace(/\s*\(..\)\s*$/, '')
-    
-    //Replace (CAN) players
-    searchText = searchText.replace(/\s*\(...\)\s*$/, '')
+    searchText = searchText.replace(stripStateRegEx, '')
     
     var ts = Date.now()
     var url = serverUrl + '/commander/internal/ComboStreamer.aspx?e=users&rcbID=R&rcbServerID=R&text='+searchText+'&comboText=&comboValue=&skin=VSNet&external=true&timeStamp='+ts
@@ -352,26 +351,29 @@ function playerSearch(searchText) {
 
           //If multiple matches, but one matches exactly, use it
           if(matches.indexOf(originalSearchText) >= 0) {
-            matches = [matches.indexOf(originalSearchText)]
+            matches = [originalSearchText.replace(stripStateRegEx,'')]
           }
 
           //If nothing matched attempt to break down the name and try again
           if(matches.length === 0) {
             let parts = originalSearchText.split(/\s+/)
             // If its a bunch of words its probably not a name
-            if(parts.length > 1 && parts.length < 4) {
+            if (parts.length > 1 && parts.length < 4) {
 
               // parts.pop()
               // console.log("Searching for " + parts.join(' '))
-              playerSearch(originalSearchText.replace(/^[^\s*]+/,'')).then(function(res) {
-                console.log("GOT: ", res)
+              playerSearch(originalSearchText.replace(/^[^\s*]+/, '')).then(function (res) {
                 resolve(res)
-              }, function(err) {
+              }, function (err) {
                 reject(err)
               })
             } else {
               resolve([])
             }
+          } else if(matches.length === 1) {
+            //Since we've found the matching player, strip the state information from the name
+            matches[0] = matches[0].replace(stripStateRegEx, '');
+            resolve(matches)
           } else {
             resolve(matches)
           }
