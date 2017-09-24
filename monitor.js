@@ -314,6 +314,9 @@ function playerSearch(searchText) {
     let originalSearchText = searchText.trim()
     searchText = searchText.replace(/\s*\(..\)\s*$/, '')
     
+    //Replace (CAN) players
+    searchText = searchText.replace(/\s*\(...\)\s*$/, '')
+    
     var ts = Date.now()
     var url = serverUrl + '/commander/internal/ComboStreamer.aspx?e=users&rcbID=R&rcbServerID=R&text='+searchText+'&comboText=&comboValue=&skin=VSNet&external=true&timeStamp='+ts
 
