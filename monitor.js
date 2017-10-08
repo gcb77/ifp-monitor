@@ -315,7 +315,7 @@ function playerSearch(searchText) {
     //Remove the state part since we can't search for it
     let originalSearchText = searchText.trim()
     searchText = searchText.replace(stripStateRegEx, '')
-    
+
     var ts = Date.now()
     var url = serverUrl + '/commander/internal/ComboStreamer.aspx?e=users&rcbID=R&rcbServerID=R&text='+searchText+'&comboText=&comboValue=&skin=VSNet&external=true&timeStamp='+ts
 
@@ -336,7 +336,7 @@ function playerSearch(searchText) {
 
           //Replace any whitespace with the regular expression whitespace
           searchText = searchText.replace(/\s+/, '\\s+')
-         
+
           //Create a regular expression from it
           var re = new RegExp(searchText, 'i')
 

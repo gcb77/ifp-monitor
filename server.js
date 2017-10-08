@@ -4,7 +4,6 @@ var bodyParser = require('body-parser')
 var fs = require('fs')
 var winston = require('winston')
 
-var scraper = require('./scraper.js')
 var monitor = require('./monitor.js')
 
 var user = process.env['SECURE_USER']
