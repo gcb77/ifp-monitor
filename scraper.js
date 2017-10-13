@@ -1,6 +1,6 @@
 var cheerio = require('cheerio')
 
-var findMatches = function(data) {
+function findMatches(data) {
   var dt = cheerio.load(data)
   var tbl = dt('#MatchesInProgressDisplay1_dgMatchesProgress')
   var matches = []
@@ -30,7 +30,7 @@ var findMatches = function(data) {
   return matches
 }
 
-var findPlayers = function(matches, players) {
+function findPlayers(matches, players) {
   var playersFound = {}
   matches.forEach(function(match) {
     players.forEach(function(player) {
@@ -45,7 +45,14 @@ var findPlayers = function(matches, players) {
   return playersFound
 }
 
+function getTournamentInfo (data) {
+  let dt = cheerio.load(data)
+  let eventSpan = dt('#lblEventName')
+  return eventSpan.text()
+}
+
 module.exports = {
   findMatches: findMatches,
-  findPlayers: findPlayers
+  findPlayers: findPlayers,
+  getTournamentInfo: getTournamentInfo
 }
