@@ -1,5 +1,5 @@
-const fs = require('fs')
 const assert = require('assert')
+const fs = require('fs')
 const scraper = require('../scraper')
 
 let test1data = fs.readFileSync('data/test1.html')

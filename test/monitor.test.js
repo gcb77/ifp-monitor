@@ -86,6 +86,19 @@ describe('Monitor', function() {
       })
     })
 
+    it('should work for Michael Everton Jr.', function() {
+      requestMockData.error = null
+      requestMockData.body = JSON.stringify({Items: [
+        {Text: 'Michael Everton Jr. (DE)'},
+        {Text: 'first2 last'}]})
+      return monitor.playerSearch('Micael Everton').then(function (res) {
+        assert.equal(res.length, 1)
+        assert.equal(res[0], 'Michael Everton Jr.')
+      }, function (err) {
+        assert.equal(err.message, 'null')
+      })
+    })
+
     it('should select the right player when multiple are found', function() {
       requestMockData.error = null
       requestMockData.body = JSON.stringify({Items: [
