@@ -225,7 +225,7 @@ app.post('/messageIn', function(req, res) {
      > 1: show list
      1: monitor.addMonitoredPlayer(name, number)
    */
-  fs.writeFileSync('./messages/'+Date.now()+'.txt', JSON.stringify(req.body))
+  fs.writeFileSync('./log/messages/'+Date.now()+'.txt', JSON.stringify(req.body))
   var msg = req.body.Body
   var number = req.body.From
 
