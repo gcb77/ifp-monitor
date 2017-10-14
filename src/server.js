@@ -110,6 +110,11 @@ app.get('/setMonitorStatus/:name/:status', function(req, res) {
   res.redirect('/players')
 })
 
+app.get('/remove/:number', function(req, res) {
+  monitor.removeMonitorNumber(req.params.number)
+  res.redirect('/players')
+})
+
 app.get('/log', function(req, res) {
   var send = []
 
@@ -121,12 +126,14 @@ app.get('/log', function(req, res) {
   var stats = monitor.getStats()
 
   //Show last 100 notifications in reverse order
+  send.push('<div class="list-group">')
   var len = stats.notificationLog.length
   for(var i = 1; i < 100; i+=1){
     if(len-i >= 0) {
-      send.push('<div class="well well-sm">'+stats.notificationLog[len-i]+'</div><br>')
+      send.push('<div class="list-item">'+stats.notificationLog[len-i]+'</div><br>')
     }
   }
+  send.push('</div>')
 
   res.send(send.join('\n'))
 })
@@ -145,27 +152,35 @@ app.get('/players', function(req, res) {
   send.push('      </div><div class="col-sm-5 text-nowrap">')
   send.push('NUMBER: <input type=text name="number">')
   send.push('      </div><div class="col-sm-2">')
-  send.push('<input type="submit" class="btn btn-primary">Add</input>')
+  send.push('<input type="submit" value="Add" class="btn btn-primary"/>')
   send.push('      </div>')
   send.push('    </div>')
   send.push('  </div>')
   send.push('</form><br><hr>')
 
-  var players = monitor.getMonitoredPlayers()
+  let players = monitor.getMonitoredPlayers()
+  let stats = monitor.getStats()
+
   Object.keys(players).forEach(function(player) {
     send.push('<div class="row">')
     send.push('<div class="col col-xs-3">')
     send.push(player)
+    if(stats.notificationsPerPlayer[player]) {
+      send.push('<span class="badge">'+stats.notificationsPerPlayer[player]+'</span>')
+    }
     send.push('</div>')
     send.push('<div class="col col-xs-3">')
     send.push(players[player].number)
     send.push('</div>')
-    send.push('<div class="col col-xs-6">')
+    send.push('<div class="col col-xs-3">')
     if(players[player].enabled) {
-      send.push("<a href='/setMonitorStatus/" + encodeURIComponent(player) + "/false'>Disable</a>")
+      send.push("<a href='/setMonitorStatus/" + encodeURIComponent(player) + "/false'><span class='glyphicon glyphicon-stop'></span> </a>")
     } else {
-      send.push("<a href='/setMonitorStatus/" + encodeURIComponent(player) + "/true'>Enable</a>")
+      send.push("<a href='/setMonitorStatus/" + encodeURIComponent(player) + "/true'><span class='glyphicon glyphicon-play'></span></a>")
     }
+    send.push('</div>')
+    send.push('<div class="col col-xs-3">')
+    send.push("<a href='/remove/" + encodeURIComponent(players[player].number) + "'><span class='glyphicon glyphicon-remove'></span> </a>")
     send.push('</div>')
     send.push('</div>')
     send.push('<br>')
@@ -229,7 +244,7 @@ app.post('/messageIn', function(req, res) {
   } else if(msg.match(/^REMOVE/i)) {
     monitor.removeMonitorNumber(number).then(function(names) {
       if(names && names.length > 0) {
-        res.send('<Response><Message>No longer monitoring: ' + names.join(' ') + '</Message></Response>')
+        res.send('<Response><Message/></Response>')
       } else {
         res.send('<Response><Message>No players being monitored with number '+number+'</Message></Response>')
       }
@@ -286,8 +301,9 @@ app.get('/playerDb', function(req, res) {
   var playerNames = Object.keys(monitoredPlayers)
 
   monitor.getPlayerDb().then(function(data) {
+    send.push("<div class='list-group'>")
     data.forEach(function(player) {
-      send.push("<div class='well row'>")
+      send.push("<div class='list-group-item row'>")
 
       send.push(" <div class='col col-xs-4'>")
       send.push(player.name)
@@ -300,16 +316,17 @@ app.get('/playerDb', function(req, res) {
       send.push(" <div class='col col-xs-4'>")
       if(!playerNames.includes(player.name)) {
         send.push(
-          "<a class='btn btn-info' href='/addPlayer?name="
+          "<a href='/addPlayer?name="
           + encodeURIComponent(player.name)
           + "&number="
           + encodeURIComponent(player.number)
-          + "'>Add</a>")
+          + "'><span class='glyphicon glyphicon-plus'></span> </a>")
       }
       send.push(" </div>")
 
       send.push("</div>")
     })
+    send.push("</div>")
     res.send(send.join(''))
     res.end()
   }, function(err) {
