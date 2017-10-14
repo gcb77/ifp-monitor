@@ -6,7 +6,7 @@ let monitor
 process.env.TWILIO_ACCOUNT_SID='null'
 process.env.TWILIO_AUTH_TOKEN='null'
 
-monitor = rewire('../monitor.js')
+monitor = rewire('../src/monitor.js')
 monitor.__set__('request', requestMock)
 monitor.__set__('sms', {})
 

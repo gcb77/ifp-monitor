@@ -7,8 +7,8 @@ var Promise = require('bluebird')
 
 var fs = require('fs')
 
-var playersFileName = 'tmp/players.json'
-var notificationsFileName = 'tmp/notifications.json'
+var playersFileName = 'log/players.json'
+var notificationsFileName = 'log/notifications.json'
 
 var Datastore = require('nedb')
 

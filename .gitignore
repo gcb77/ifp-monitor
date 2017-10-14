@@ -10,3 +10,5 @@ messages/*.txt
 tmp/*
 env.js
 *.log
+log/
+db/players.db

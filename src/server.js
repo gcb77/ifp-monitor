@@ -51,8 +51,8 @@ function getUnauthorizedResponse(req) {
 
 app.get('/', function(req, res) {
   var send = []
-  send.push(fs.readFileSync('head.html'))
-  send.push(fs.readFileSync('nav.html'))
+  send.push(fs.readFileSync('views/head.html'))
+  send.push(fs.readFileSync('views/nav.html'))
   if(monitor.getStats().started) {
     send.push("<a href='/stop' class='btn btn-danger'>Stop</a><br>")
   } else {
@@ -90,8 +90,8 @@ app.post('/setRegistrationResponse', function(req, res) {
 
 app.get('/monitor', function(req,res) {
   var send = []
-  send.push(fs.readFileSync('head.html'))
-  send.push(fs.readFileSync('nav.html'))
+  send.push(fs.readFileSync('views/head.html'))
+  send.push(fs.readFileSync('views/nav.html'))
   var stats = monitor.getStats()
   send.push("<ul>")
   send.push("<li><b>Monitoring "+stats.monitoredPlayers.length + " players </b>")
@@ -113,8 +113,8 @@ app.get('/setMonitorStatus/:name/:status', function(req, res) {
 app.get('/log', function(req, res) {
   var send = []
 
-  send.push(fs.readFileSync('head.html'))
-  send.push(fs.readFileSync('nav.html'))
+  send.push(fs.readFileSync('views/head.html'))
+  send.push(fs.readFileSync('views/nav.html'))
 
   send.push('<b>Notification Log</b><br><br>')
 
@@ -134,8 +134,8 @@ app.get('/log', function(req, res) {
 app.get('/players', function(req, res) {
   var send = []
 
-  send.push(fs.readFileSync('head.html'))
-  send.push(fs.readFileSync('nav.html'))
+  send.push(fs.readFileSync('views/head.html'))
+  send.push(fs.readFileSync('views/nav.html'))
 
   send.push('<form method="GET" action="addPlayer">')
   send.push('  <div class="form-inline">')
@@ -258,7 +258,7 @@ app.post('/messageIn', function(req, res) {
           res.send('<Response/>')
           res.end()
         }, function(err) {
-          winston.error("Message: " + msg + " caused error " + err)
+          winston.warn("Message: " + msg + " caused error " + err.message)
           monitor.notifyAdmin(number + " message '"+msg+"' caused error: " + err.message)
           if(err.showUser) {
             res.send('<Response><Message>Error: '+err.message+'</Message></Response>')
@@ -279,8 +279,8 @@ app.post('/messageIn', function(req, res) {
 app.get('/playerDb', function(req, res) {
   var send = []
 
-  send.push(fs.readFileSync('head.html'))
-  send.push(fs.readFileSync('nav.html'))
+  send.push(fs.readFileSync('views/head.html'))
+  send.push(fs.readFileSync('views/nav.html'))
 
   var monitoredPlayers = monitor.getMonitoredPlayers()
   var playerNames = Object.keys(monitoredPlayers)

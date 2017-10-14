@@ -1,6 +1,6 @@
 const assert = require('assert')
 const fs = require('fs')
-const scraper = require('../scraper')
+const scraper = require('../src/scraper')
 
 let test1data = fs.readFileSync('data/test1.html')
 let test2data = fs.readFileSync('data/test2.html')
