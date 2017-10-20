@@ -49,7 +49,7 @@ function findPlayers(matches, players) {
   return playersFound
 }
 
-function getTournamentInfo (data) {
+function parseTournamentName(data) {
   let dt = cheerio.load(data)
   let eventSpan = dt('#lblEventName')
   return eventSpan.text()
@@ -58,5 +58,5 @@ function getTournamentInfo (data) {
 module.exports = {
   findMatches: findMatches,
   findPlayers: findPlayers,
-  getTournamentInfo: getTournamentInfo
+  parseTournamentName: parseTournamentName
 }

@@ -191,13 +191,11 @@ app.get('/players', function(req, res) {
 })
 
 app.get('/addPlayer', function(req,res) {
-  try {
-    monitor.addMonitoredPlayer(req.query.name, req.query.number)
-  } catch (err) {
+  monitor.addMonitoredPlayer(req.query.name, req.query.number).then(function() {
+    res.redirect('/players')
+  }, function(err) {
     res.send(err.message)
-    return
-  }
-  res.redirect('/players')
+  })
 })
 
 app.get('/start', function(req,res) {
@@ -321,6 +319,12 @@ app.get('/playerDb', function(req, res) {
           + "&number="
           + encodeURIComponent(player.number)
           + "'><span class='glyphicon glyphicon-plus'></span> </a>")
+      }
+      if(player.beingMonitored) {
+        send.push("<span class='glyphicon glyphicon-eye-open'>&nbsp</span>")
+      }
+      if(player.inTournament) {
+        send.push("<span class='glyphicon glyphicon-tower'>&nbsp</span>")
       }
       send.push(" </div>")
 

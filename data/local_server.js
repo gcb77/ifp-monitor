@@ -17,6 +17,12 @@ app.get('/commander/internal/ComboStreamer.aspx', function(req, res) {
   res.end()
 })
 
+app.get('/commander/tour/public/welcome.aspx', function(req, res) {
+  console.log("LOCAL SERVER: received welcome query, sending canned message")
+  res.send(fs.readFileSync('./welcome.html'))
+  res.end()
+})
+
 app.listen(port)
 
 exports = module.exports = app;

@@ -1,6 +1,7 @@
 let request = require('request')
 let sms = require('./sms.js')
 const scraper = require('./scraper.js')
+const tournamentUtils = require('./tournamentUtils')
 const winston = require('winston')
 
 const Promise = require('bluebird')
@@ -17,8 +18,6 @@ let serverUrl = 'http://ifp.everguide.com'
 let adminNumber = process.env['ADMIN_NUMBER']
 
 let playersDatabase = new Datastore({filename: 'db/players.db', autoload: true})
-
-let matchesInProgress = {}
 
 if(process.env.SERVER_URL) {
   serverUrl = process.env.SERVER_URL
@@ -134,41 +133,75 @@ function addMonitoredPlayer(name, number) {
   })
 }
 
-// Keep track of when matches start/end
-function trackMatchProgress(matches_list) {
-  Object.keys(matchesInProgress).forEach(function(key) {
-    matchesInProgress[key].flaggedForRemove = true
-  })
 
-  //Utility to make a key from the match to find it in the current list
-  let makeKey = function(match) {
-    return [match.event, match.table, match.team1, match.team2, match.forPosition].join(', ')
-  }
-
-  //Flag matches still in progress and add new matches
-  matches_list.forEach(function(currentMatch) {
-    let key = makeKey(currentMatch)
-    if(matchesInProgress[key]) {
-      matchesInProgress[key].flaggedForRemove = false
-    } else {
-      currentMatch.startTime = Date.now()
-      matchesInProgress[key] = currentMatch
-    }
-  })
-
-  //Remove finished matches
-  Object.keys(matchesInProgress).forEach(function(key) {
-    if(matchesInProgress[key].flaggedForRemove) {
-      let m = matchesInProgress[key]
-      winston.info("MATCH TRACK " + key + ', ' + m.startTime + ', ' + Date.now())
-      delete matchesInProgress[key]
-    }
-  })
-
-}
 
 function localErrorHandler(err) {
   winston.error(err)
+}
+
+function processMatchPage(html) {
+  //Flag all current notifications as potentially ready to clean up.  Notifications are removed when
+  // the match is no longer found on the matches-in-progress page
+  Object.keys(internalServerData.notifiedPlayers).forEach(function (key) {
+    internalServerData.notifiedPlayers[key] = 0
+  })
+
+  //Find the matches we are interested in
+  let currentMatches = scraper.findMatches(html)
+  tournamentUtils.trackMatchProgress(currentMatches)
+  stats.currentMatches = currentMatches
+
+  //matchUtils.notifyActivePlayers(currentMatches)
+
+  //Use the scraping utility to find the players currently called up
+  let players = scraper.findPlayers(currentMatches, Object.keys(internalServerData.monitoredPlayers))
+
+  //Notify each player
+  Object.keys(players).forEach(function (player) {
+    let match = players[player]
+    //Make a unique key for this notification so we don't repeat it: player, event, team1 and team2
+    let key = player + '_' + match.event + '_' + match.team1 + '_' + match.team2 + '_' + match.forPosition + '_' + match.table
+    if (internalServerData.notifiedPlayers[key] !== undefined) {
+
+      //Flag this notification as still active
+      internalServerData.notifiedPlayers[key] = 1
+    } else {
+      internalServerData.notifiedPlayers[key] = 1
+      let message = "Table " + match.table + " " + match.event + " " + match.team1 + " vs " + match.team2 + ' for ' + match.forPosition
+      if (internalServerData.monitoredPlayers[player].enabled) {
+        let dt = new Date()
+        winston.info(dt + " notifying " + player + "(" + internalServerData.monitoredPlayers[player].number + ") " + message)
+        sms.sendMessage(internalServerData.monitoredPlayers[player].number, message).catch(localErrorHandler)
+        stats.notificationsSent += 1
+        stats.notificationLog.push(
+          ("00" + dt.getHours()).slice(-2) + ':' +
+          ("00" + dt.getMinutes()).slice(-2) + ':' +
+          ("00" + dt.getSeconds()).slice(-2) + ' ' +
+          player + " (" + internalServerData.monitoredPlayers[player].number + ") - " +
+          message)
+
+        //keep counts of notifications per player
+        if (!stats.notificationsPerPlayer[player]) {
+          stats.notificationsPerPlayer[player] = 1
+        } else {
+          stats.notificationsPerPlayer[player]++
+        }
+
+      } else {
+        winston.warn("Player " + player + " is disabled, not sending notification")
+      }
+    }
+  })
+
+  //Remove all notifications that are no longer active
+  Object.keys(internalServerData.notifiedPlayers).forEach(function (key) {
+    if (internalServerData.notifiedPlayers[key] === 0) {
+      delete internalServerData.notifiedPlayers[key]
+    }
+  })
+
+  //Save the notifications so we don't resend
+  fs.writeFileSync(notificationsFileName, JSON.stringify(internalServerData.notifiedPlayers))
 }
 
 /**
@@ -190,67 +223,11 @@ function monitorFunction() {
           notifiedProblems = false
           sms.sendMessage(adminNumber, "Functionality restored").catch(localErrorHandler)
         }
-
-        //Flag all current notifications as potentially ready to clean up.  Notifications are removed when
-        // the match is no longer found on the matches-in-progress page
-        Object.keys(internalServerData.notifiedPlayers).forEach(function(key) {
-          internalServerData.notifiedPlayers[key] = 0
-        })
-
-        //Find the matches we are interested in
-        let currentMatches = scraper.findMatches(html)
-        trackMatchProgress(currentMatches)
-        stats.currentMatches = currentMatches
-
-        //Use the scraping utility to find the players currently called up
-        let players = scraper.findPlayers(currentMatches, Object.keys(internalServerData.monitoredPlayers))
-
-        //Notify each player
-        Object.keys(players).forEach(function(player) {
-          let match = players[player]
-          //Make a unique key for this notification so we don't repeat it: player, event, team1 and team2
-          let key = player+'_'+match.event+'_'+match.team1+'_'+match.team2+'_'+match.forPosition+'_'+match.table
-          if(internalServerData.notifiedPlayers[key] !== undefined) {
-
-            //Flag this notification as still active
-            internalServerData.notifiedPlayers[key] = 1
-          } else {
-            internalServerData.notifiedPlayers[key] = 1
-            let message = "Table " + match.table + " " + match.event + " " + match.team1 + " vs " + match.team2 + ' for ' + match.forPosition
-            if(internalServerData.monitoredPlayers[player].enabled) {
-              let dt = new Date()
-              winston.info(dt + " notifying " + player + "(" + internalServerData.monitoredPlayers[player].number + ") " + message)
-              sms.sendMessage(internalServerData.monitoredPlayers[player].number, message).catch(localErrorHandler)
-              stats.notificationsSent += 1
-              stats.notificationLog.push(
-                ("00" + dt.getHours()).slice(-2) +':'+
-                ("00" + dt.getMinutes()).slice(-2) +':'+
-                ("00" + dt.getSeconds()).slice(-2) + ' ' +
-                player + " (" + internalServerData.monitoredPlayers[player].number + ") - " +
-                message)
-
-              //keep counts of notifications per player
-              if(!stats.notificationsPerPlayer[player]) {
-                stats.notificationsPerPlayer[player] = 1
-              } else {
-                stats.notificationsPerPlayer[player]++
-              }
-
-            } else {
-              winston.warn("Player " + player + " is disabled, not sending notification")
-            }
-          }
-        })
-
-        //Remove all notifications that are no longer active
-        Object.keys(internalServerData.notifiedPlayers).forEach(function(key) {
-          if(internalServerData.notifiedPlayers[key] === 0) {
-            delete internalServerData.notifiedPlayers[key]
-          }
-        })
-
-        //Save the notifications so we don't resend
-        fs.writeFileSync(notificationsFileName, JSON.stringify(internalServerData.notifiedPlayers))
+        try {
+          processMatchPage(html)
+        } catch(err) {
+          winston.error("Failed to process matches page: " + err)
+        }
       } else {
         //We've had a failure
 
@@ -291,8 +268,18 @@ function monitorStart() {
   stats.started = Date.now()
   stats.stopped = undefined
 
-  //Set up a monitoring interval
-  monitorInterval = setInterval(monitorFunction, monitoringInterval)
+  request(serverUrl + '/commander/tour/public/welcome.aspx', function (err, response, html) {
+    //Check return status
+    if (!err && response.statusCode === 200) {
+      let name = scraper.parseTournamentName(html)
+      tournamentUtils.doStart(name).then(function() {
+        //Set up a monitoring interval
+        monitorInterval = setInterval(monitorFunction, monitoringInterval)
+      })
+    } else {
+      winston.error("Unable to extract tournament information: " + err)
+    }
+  })
 }
 
 function monitorStop() {
@@ -302,6 +289,7 @@ function monitorStop() {
     clearInterval(monitorInterval)
   }
   monitorInterval = undefined
+  tournamentUtils.archiveTournament()
 }
 
 function getStats() {
@@ -427,7 +415,7 @@ function getPlayerDb() {
         reject(err)
       } else {
         // sort the players alphabetically by name
-        resolve(data.sort(function(a, b) {
+        data.sort(function(a, b) {
           if(a.name < b.name) {
             return -1
           }
@@ -435,7 +423,18 @@ function getPlayerDb() {
             return 1
           }
           return 0
-        }))
+        })
+        tournamentUtils.getTournamentInfo().then(function(td) {
+          data.forEach(function(player) {
+            if(td.players[player.name]) {
+              player.inTournament = true
+            }
+            if(internalServerData.monitoredPlayers[player.name]) {
+              player.beingMonitored = true
+            }
+          })
+          resolve(data)
+        })
       }
     })
   })
