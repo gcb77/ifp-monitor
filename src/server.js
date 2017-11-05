@@ -85,7 +85,8 @@ app.get('/', function(req, res) {
   send.push('</div>')
 
   send.push('</div>')
-  if(!monitor.getStats().started) {
+
+  if(!monitor.getStats().started && fs.existsSync('db/notifications.json')) {
     send.push("<hr><a href='/archive' class='btn btn-warning'>Archive</a><br>")
   }
   send.push('</form>')

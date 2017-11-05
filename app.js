@@ -8,9 +8,6 @@ require('./env.js')
 if(!fs.existsSync('./log')) {
   fs.mkdirSync('./log')
 }
-if(!fs.existsSync('./log/messages')) {
-  fs.mkdirSync('./log/messages')
-}
 
 //Configure logging
 winston.add(winston.transports.File, { filename: 'log/ifpmon.log' });

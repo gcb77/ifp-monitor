@@ -136,7 +136,7 @@ function doStart(tournamentName) {
           resolve()
         }
       } else {
-        tournamentStats.insert({}, {tournament_name: tournamentName})
+        tournamentStats.insert({tournament_name: tournamentName})
         resolve()
       }
     })

@@ -8,8 +8,8 @@ const Promise = require('bluebird')
 
 const fs = require('fs')
 
-const playersFileName = 'log/players.json'
-const notificationsFileName = 'log/notifications.json'
+const playersFileName = 'db/players.json'
+const notificationsFileName = 'db/notifications.json'
 
 const Datastore = require('nedb')
 const stripStateRegEx = /\s*\(.+\)\s*$/
@@ -27,22 +27,32 @@ if(process.env.SERVER_URL) {
  * Structure to keep internal data
  * @type {{monitoredPlayers: {}, notifiedPlayers: {}, registrationResponse: string}}
  */
-let internalServerData = {
-  monitoredPlayers: {},
-  notifiedPlayers: {},
-  registrationResponse: '$player registered, you will receive messages when called for a match. Send REMOVE to be removed from this list.'
+function newInternalServerData () {
+  return {
+    monitoredPlayers: {},
+    notifiedPlayers: {},
+    registrationResponse: '$player registered, you will receive messages when called for a match. Send REMOVE to be removed from this list.'
+  }
 }
+
+let internalServerData = newInternalServerData()
 
 let monitorInterval = undefined
 let notifiedProblems = false
 let monitoringInterval = 30000
 
-let stats = {
-  monitoredPlayers: [],
-  notificationsSent: 0,
-  notificationLog: [],
-  notificationsPerPlayer: {}
+
+let stats = newStats()
+
+function newStats() {
+  return {
+    monitoredPlayers: [],
+    notificationsSent: 0,
+    notificationLog: [],
+    notificationsPerPlayer: {}
+  }
 }
+
 
 function loadSavedPlayers() {
   try {
@@ -283,7 +293,10 @@ function monitorStart() {
 }
 
 function archiveTournament() {
-  return tournamentUtils.archiveTournament()
+  return tournamentUtils.archiveTournament().then(function() {
+    stats = newStats()
+    internalServerData = newInternalServerData()
+  })
 }
 
 function monitorStop() {
