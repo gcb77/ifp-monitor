@@ -9,6 +9,12 @@ var monitor = require('./monitor.js')
 var user = process.env['SECURE_USER']
 var password = process.env['SECURE_PASSWORD']
 
+const dataStore = require('./dataStore')
+
+//Keep track of text messages received
+let receivedMessages = dataStore.getDatastore('receivedMessages');
+
+
 var app = express()
 
 //Use body-parser for messageIn
@@ -79,6 +85,9 @@ app.get('/', function(req, res) {
   send.push('</div>')
 
   send.push('</div>')
+  if(!monitor.getStats().started) {
+    send.push("<hr><a href='/archive' class='btn btn-warning'>Archive</a><br>")
+  }
   send.push('</form>')
   res.send(send.join(''))
 })
@@ -212,6 +221,11 @@ app.get('/stop', function(req,res) {
   // res.send("Stopped")
 })
 
+app.get('/archive', function(req, res) {
+  winston.info("ARCHIVE called")
+  monitor.archiveTournament()
+  res.redirect('/')
+})
 
 app.post('/messageIn', function(req, res) {
   /*
@@ -223,7 +237,9 @@ app.post('/messageIn', function(req, res) {
      > 1: show list
      1: monitor.addMonitoredPlayer(name, number)
    */
-  fs.writeFileSync('./log/messages/'+Date.now()+'.txt', JSON.stringify(req.body))
+
+  //Save the incoming text message for later auditing
+  receivedMessages.insert({time: Date.now(), body: req.body})
   var msg = req.body.Body
   var number = req.body.From
 

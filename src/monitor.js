@@ -282,6 +282,10 @@ function monitorStart() {
   })
 }
 
+function archiveTournament() {
+  return tournamentUtils.archiveTournament()
+}
+
 function monitorStop() {
   delete stats.started
   stats.stopped = Date.now()
@@ -289,7 +293,6 @@ function monitorStop() {
     clearInterval(monitorInterval)
   }
   monitorInterval = undefined
-  tournamentUtils.archiveTournament()
 }
 
 function getStats() {
@@ -448,6 +451,7 @@ module.exports = {
   addMonitoredPlayer: addMonitoredPlayer,
   monitorStart: monitorStart,
   monitorStop: monitorStop,
+  archiveTournament: archiveTournament,
   getStats: getStats,
   getMonitoredPlayers: getMonitoredPlayers,
   setMonitorStatusForPlayer: monitorStatus,

@@ -12,3 +12,4 @@ env.js
 *.log
 log/
 db/players.db
+db/dataStore/*
