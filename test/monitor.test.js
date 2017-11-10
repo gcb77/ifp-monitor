@@ -12,6 +12,23 @@ monitor.__set__('sms', {})
 
 let requestMockData = {}
 
+//Fancy utility method to check a bunch of names
+let namesCheck = function(monitor, searches) {
+  let promises = []
+  searches.forEach(function(srch) {
+    promises.push(monitor.playerSearch(srch.search).then(function(res) {
+      assert.equal(res.length, srch.expect.length, "Search for '" + srch.search + "'")
+      srch.expect.forEach(function(expect, idx) {
+        assert.equal(res[idx], expect, "Search for '" + srch.search + "'")
+      })
+      return res
+    }, function(err) {
+      throw new Error("Search for " + srch.search + " caused error: " + err )
+    }))
+  })
+  return Promise.all(promises)
+}
+
 function requestMock(options, cb) {
   // console.log("HERE")
   // cb(new Error("HERE"))
@@ -42,21 +59,17 @@ describe('Monitor', function() {
     it('should match multiple names', function () {
       requestMockData.error = null
       requestMockData.body = JSON.stringify({Items: [{Text: 'first last'}, {Text: 'first last2'}]})
-      return monitor.playerSearch('first').then(function (res) {
-        assert.equal(res.length, 2)
-      }, function (err) {
-        assert.equal(err.message, 'null')
-      })
+      return namesCheck(monitor, [
+        {search: 'first', expect: ['first last', 'first last2']}
+      ])
     })
 
     it('should select exact from multiple names names', function () {
       requestMockData.error = null
       requestMockData.body = JSON.stringify({Items: [{Text: 'first last'}, {Text: 'first last2'}]})
-      return monitor.playerSearch('first last').then(function (res) {
-        assert.equal(res.length, 1)
-      }, function (err) {
-        assert.equal(err.message, 'null')
-      })
+      return namesCheck(monitor, [
+        {search: 'first last', expect: ['first last']}
+      ])
     })
 
     it('should offer suggestions based on part of name if nothing matches', function() {
@@ -66,11 +79,9 @@ describe('Monitor', function() {
         {Text: 'first a last'},
         {Text: 'john q user'},
         {Text: 'first2 last'}]})
-      return monitor.playerSearch('first last').then(function (res) {
-        assert.equal(res.length, 3)
-      }, function (err) {
-        assert.equal(err.message, 'null')
-      })
+      return namesCheck(monitor, [
+        {search: 'first last', expect: [ 'first b last2', 'first a last', 'first2 last' ]},
+      ])
     })
 
     it('should properly match CAN players', function() {
@@ -78,12 +89,9 @@ describe('Monitor', function() {
       requestMockData.body = JSON.stringify({Items: [
         {Text: 'PLAYER ONE (CAN)'},
         {Text: 'first2 last'}]})
-      return monitor.playerSearch('PLAYER').then(function (res) {
-        assert.equal(res.length, 1)
-        assert.equal(res[0], 'PLAYER ONE')
-      }, function (err) {
-        assert.equal(err.message, 'null')
-      })
+      return namesCheck(monitor, [
+        {search: 'PLAYER', expect: ['PLAYER ONE']}
+      ])
     })
 
     it('should work for Michael Everton Jr.', function() {
@@ -91,55 +99,51 @@ describe('Monitor', function() {
       requestMockData.body = JSON.stringify({Items: [
         {Text: 'Michael Everton Jr. (DE)'},
         {Text: 'first2 last'}]})
-      return monitor.playerSearch('Micael Everton').then(function (res) {
-        assert.equal(res.length, 1)
-        assert.equal(res[0], 'Michael Everton Jr.')
-      }, function (err) {
-        assert.equal(err.message, 'null')
-      })
+      return namesCheck(monitor, [{search: 'Micael Everton', expect: ['Michael Everton Jr.']}])
     })
 
-    it('should match name in multiple states', function(done) {
+    it('should do complex matching when a name is not found', function() {
+      requestMockData.error = null
+      requestMockData.body = JSON.stringify({Items: [
+        {Text: 'Thirty Five'},
+        {Text: 'Five Over And Over'},
+        {Text: 'Over Thirty'},
+        {Text: 'Over Forty'},
+        {Text: 'Over Five'},
+      ]})
+      return namesCheck(monitor, [
+        {search: 'Over Five', expect: ['Over Five']},
+        {search: 'blah blah', expect: []},
+        {search: 'Over', expect: ['Five Over And Over', 'Over Thirty', 'Over Forty', 'Over Five']},
+        {search: 'Over Foy', expect: ['Five Over And Over', 'Over Thirty', 'Over Forty', 'Over Five']},
+        {search: 'Foy Over', expect: ['Five Over And Over']},
+        {search: 'Thirty', expect: ['Thirty Five', 'Over Thirty']},
+        {search: 'Or Thirty', expect: ['Over Thirty']},
+      ])
+    })
+
+
+    it('should match name in multiple states', function() {
       requestMockData.error = null
       requestMockData.body = JSON.stringify({Items: [
         {Text: 'George Barta (WA)'},
         {Text: 'George Barta (CO)'},
       ]})
-      monitor.playerSearch('George Barta').then(function (res) {
-        //console.log(res)
-        assert.equal(res.length, 1)
-        assert.equal(res[0], 'George Barta')
-        done()
-      }, function (err) {
-        assert.equal(err.message, 'null')
-        done(err)
-      })
+      return namesCheck(monitor, [
+        {search: 'George Barta', expect: ['George Barta']}
+      ])
     })
 
-    it('should select the right player when multiple are found', function(done) {
+    it('should select the right player when multiple are found', function() {
       requestMockData.error = null
       requestMockData.body = JSON.stringify({Items: [
         {Text: 'George Barta One'},
         {Text: 'George Barta Two'},
         ]})
-      monitor.playerSearch('George Barta').then(function (res) {
-        assert.equal(res.length, 2)
-        assert.equal(res[0], 'George Barta One')
-        assert.equal(res[1], 'George Barta Two')
-      }, function (err) {
-        assert.equal(err.message, 'null')
-        done(err)
-      })
-      monitor.playerSearch('George Barta One').then(function (res) {
-        //console.log(res)
-        assert.equal(res.length, 1)
-        assert.equal(res[0], 'George Barta One')
-        done()
-      }, function (err) {
-        assert.equal(err.message, 'null')
-        done(err)
-      })
-
+      return namesCheck(monitor, [
+        {search: 'George Barta', expect: ['George Barta One', 'George Barta Two']},
+        {search: 'George Barta One', expect: ['George Barta One']}
+      ])
     })
   })
 })

@@ -354,6 +354,11 @@ function playerSearch(searchText) {
     let originalSearchText = searchText.trim()
     searchText = searchText.replace(stripStateRegEx, '')
 
+    //Don't perform a search on anything that's 3 characters or less
+    if(originalSearchText.length < 4) {
+      return resolve([])
+    }
+
     let ts = Date.now()
     let url = serverUrl + '/commander/internal/ComboStreamer.aspx?e=users&rcbID=R&rcbServerID=R&text='+searchText+'&comboText=&comboValue=&skin=VSNet&external=true&timeStamp='+ts
 
@@ -400,12 +405,22 @@ function playerSearch(searchText) {
           //If nothing matched attempt to break down the name and try again
           if(matches.length === 0) {
             let parts = originalSearchText.split(/\s+/)
+
             // If its a bunch of words its probably not a name
             if (parts.length > 1 && parts.length < 4) {
 
-              // parts.pop()
-              playerSearch(originalSearchText.replace(/^[^\s*]+/, '')).then(function (res) {
-                resolve(res)
+              // Strip the last word and try again
+              playerSearch(originalSearchText.replace(/\s+[^\s*]+$/, '')).then(function (res) {
+                if(res.length === 0) {
+                  // Since stripping the last word didn't work, try stripping the first word out and try searching again
+                  playerSearch(originalSearchText.replace(/^[^\s*]+/, '')).then(function (res) {
+                    resolve(res)
+                  }, function (err) {
+                    reject(err)
+                  })
+                } else {
+                  resolve(res)
+                }
               }, function (err) {
                 reject(err)
               })
