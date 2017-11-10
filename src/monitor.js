@@ -378,12 +378,18 @@ function playerSearch(searchText) {
           //Create a regular expression from it
           let re = new RegExp(searchText, 'i')
 
+          //Use a hash to deal with duplicates
+          let namesHash = {}
+
           //Iterate over players
           resp.Items.forEach(function(item) {
             if(re.test(item.Text)) {
-              matches.push(item.Text)
+              //Strip the state from the matched name and add it to the names hash
+              namesHash[item.Text.replace(stripStateRegEx,'')] = true;
             }
           })
+          //Get the object keys of the hash as the name
+          matches = Object.keys(namesHash)
 
 
           //If multiple matches, but one matches exactly, use it

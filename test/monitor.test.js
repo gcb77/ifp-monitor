@@ -99,25 +99,45 @@ describe('Monitor', function() {
       })
     })
 
-    it('should select the right player when multiple are found', function() {
+    it('should match name in multiple states', function(done) {
       requestMockData.error = null
       requestMockData.body = JSON.stringify({Items: [
         {Text: 'George Barta (WA)'},
         {Text: 'George Barta (CO)'},
+      ]})
+      monitor.playerSearch('George Barta').then(function (res) {
+        //console.log(res)
+        assert.equal(res.length, 1)
+        assert.equal(res[0], 'George Barta')
+        done()
+      }, function (err) {
+        assert.equal(err.message, 'null')
+        done(err)
+      })
+    })
+
+    it('should select the right player when multiple are found', function(done) {
+      requestMockData.error = null
+      requestMockData.body = JSON.stringify({Items: [
+        {Text: 'George Barta One'},
+        {Text: 'George Barta Two'},
         ]})
       monitor.playerSearch('George Barta').then(function (res) {
         assert.equal(res.length, 2)
-        assert.equal(res[0], 'George Barta (WA)')
-        assert.equal(res[1], 'George Barta (CO)')
+        assert.equal(res[0], 'George Barta One')
+        assert.equal(res[1], 'George Barta Two')
       }, function (err) {
         assert.equal(err.message, 'null')
+        done(err)
       })
-      monitor.playerSearch('George Barta (WA)').then(function (res) {
-        console.log(res)
+      monitor.playerSearch('George Barta One').then(function (res) {
+        //console.log(res)
         assert.equal(res.length, 1)
-        assert.equal(res[0], 'George Barta')
+        assert.equal(res[0], 'George Barta One')
+        done()
       }, function (err) {
         assert.equal(err.message, 'null')
+        done(err)
       })
 
     })

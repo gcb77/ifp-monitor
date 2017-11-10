@@ -31,7 +31,7 @@ describe('Scraper', function() {
 
   describe('getTournamentInfo()', function() {
     it('should parse out the tournament name', function() {
-      let name = scraper.getTournamentInfo(welcomeData)
+      let name = scraper.parseTournamentName(welcomeData)
       assert.equal(name, '2017 Pennsylvania State')
     })
   })
