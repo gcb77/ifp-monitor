@@ -145,5 +145,16 @@ describe('Monitor', function() {
         {search: 'George Barta One', expect: ['George Barta One']}
       ])
     })
+
+    it('should select the exact player when multiple are found', function() {
+      requestMockData.error = null
+      requestMockData.body = JSON.stringify({Items: [
+        {Text: 'George Barta'},
+        {Text: 'George Barta Sr'},
+        ]})
+      return namesCheck(monitor, [
+        {search: 'GEORGE BARTA', expect: ['George Barta']},
+      ])
+    })
   })
 })

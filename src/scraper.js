@@ -36,9 +36,9 @@ function findPlayers(matches, players) {
     players.forEach(function(player) {
 
       //Remove any literal '.' characters from the search
-      player = player.replace('.', '')
+      let cp = player.replace('.', '')
 
-      var re = new RegExp('\\b'+player+'\\b')
+      var re = new RegExp('\\b'+cp+'\\b', 'i')
       if(re.test(match.team1)) {
         playersFound[player] = match
       } else if(re.test(match.team2)) {

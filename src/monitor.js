@@ -398,9 +398,12 @@ function playerSearch(searchText) {
 
 
           //If multiple matches, but one matches exactly, use it
-          if(matches.indexOf(originalSearchText) >= 0) {
-            matches = [originalSearchText.replace(stripStateRegEx,'')]
-          }
+          let exactMatcExp = new RegExp('^'+originalSearchText.replace(stripStateRegEx, '')+'$', 'i')
+          matches.forEach(function(thisMatch) {
+            if(exactMatcExp.test(thisMatch)) {
+              matches = [thisMatch]
+            }
+          })
 
           //If nothing matched attempt to break down the name and try again
           if(matches.length === 0) {

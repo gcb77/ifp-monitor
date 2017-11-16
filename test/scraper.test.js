@@ -26,6 +26,7 @@ describe('Scraper', function() {
       let playersFound = scraper.findPlayers(matches, playersToSearch)
       assert(playersFound)
       assert.equal(Object.keys(playersFound).length, 1 ) //Ensure 1 match was found
+      assert.equal(Object.keys(playersFound)[0], 'JENNY ONG Jr.' ) //Ensure 1 match was found
     })
   })
 
