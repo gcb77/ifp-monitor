@@ -116,14 +116,18 @@ function addMonitoredPlayer(name, number) {
 
   let addToMonitor = new Promise(function(resolve, reject) {
     if(internalServerData.monitoredPlayers[name]) {
-      let err = new Error(name + " already monitored by " + internalServerData.monitoredPlayers[name].number)
+      let msg = name + " already monitored"
+      if(number != internalServerData.monitoredPlayers[name].number) {
+        let msg = name + " is currently being monitored by someone else"
+      }
+      let err = new Error(msg)
       err.showUser = true
       return reject(err)
     }
 
     //Send message to admin
     let responseStr = internalServerData.registrationResponse.replace('$player', name)
-    sms.sendMessage(adminNumber, "Added " + name + " to monitor, sending notifications to " + number)
+    // sms.sendMessage(adminNumber, "Added " + name + " to monitor, sending notifications to " + number)
 
     //Send message to subscriber
     sms.sendMessage(number, responseStr)
