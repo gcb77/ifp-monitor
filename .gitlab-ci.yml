@@ -16,4 +16,6 @@ install-dependencies:
 
 run-unit-tests:
   stage: test
-  script: npm run test
+  script: 
+    - npm install
+    - npm run test
