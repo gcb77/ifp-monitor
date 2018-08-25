@@ -1,0 +1,41 @@
+<html lang="en">
+
+<head>
+    <% include ../partials/head %>
+</head>
+
+<body>
+    <header>
+        <% include ../partials/nav %>
+    </header>
+    <main>
+        <% if(started) { %>
+            <a href='/stop' class='btn btn-danger'>Stop</a>
+        <% } else { %>
+            <a href='/start' class='btn btn-success'>Start</a>
+        <% } %>
+        <br>
+        <hr>Monitoring: <%- monitorCount %> players
+
+        <hr>
+        <form method="POST" action="/setRegistrationResponse">
+            <div class="row">
+
+                <div class="col col-sm-8">
+                    <input type="text" style="width: 100%" name="message" value="<%-registerResponse%>">
+                </div>
+
+                <div class="col col-sm-4">
+                    <input type="submit" class="btn btn-primary" value="Update">
+                </div>
+
+            </div>
+
+            <% if (canArchive) { %>
+                <hr><a href='/archive' class='btn btn-warning'>Archive</a><br>
+            <% } %>
+        </form>
+    </main>
+</body>
+
+</html>

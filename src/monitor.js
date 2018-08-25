@@ -3,6 +3,7 @@ let sms = require('./sms.js')
 const scraper = require('./scraper.js')
 const tournamentUtils = require('./tournamentUtils')
 const winston = require('winston')
+const debug = require('debug')('ifp-monitor:monitor')
 
 const Promise = require('bluebird')
 
@@ -42,7 +43,7 @@ let internalServerData = newInternalServerData()
 
 let monitorInterval = undefined
 let notifiedProblems = false
-let monitoringInterval = 30000
+let monitoringInterval = 10000
 
 
 let stats = newStats()
@@ -161,6 +162,7 @@ function localErrorHandler(err) {
 }
 
 function processMatchPage(html) {
+  debug("Processing the current match page")
   //Flag all current notifications as potentially ready to clean up.  Notifications are removed when
   // the match is no longer found on the matches-in-progress page
   Object.keys(internalServerData.notifiedPlayers).forEach(function (key) {
@@ -229,6 +231,7 @@ function processMatchPage(html) {
  * Main driver to perform monitoring.  Expected to be called at a regular interval.
  */
 function monitorFunction() {
+  debug('Monitor function running')
 
   //Only run if there are players to monitor
   if (Object.keys(internalServerData.monitoredPlayers).length > 0) {
@@ -294,6 +297,7 @@ function monitorStart() {
     if (!err && response.statusCode === 200) {
       let name = scraper.parseTournamentName(html)
       tournamentUtils.doStart(name).then(function () {
+        debug('Starting monitoring interval with ', monitoringInterval)
         //Set up a monitoring interval
         monitorInterval = setInterval(monitorFunction, monitoringInterval)
       })

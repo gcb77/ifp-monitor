@@ -1,0 +1,43 @@
+<html lang="en">
+
+<head>
+    <% include ../partials/head %>
+</head>
+
+<body>
+    <header>
+        <% include ../partials/nav %>
+    </header>
+    <main class="container-fluid">
+        <div class='list-group'>
+            <% data.forEach(function (player) { %>
+            <div class='list-group-item row'>
+
+                <div class='col col-xs-4'>
+                    <%= player.name %>
+                </div>
+
+                <div class='col col-xs-4'>
+                    <%= player.number %>
+                </div>
+
+                <div class='col col-xs-4'>
+                <% if (!playerNames.includes(player.name)) { %>
+
+                    <a href='/addPlayer?name=<%=encodeURIComponent(player.name)%>&number=<%=encodeURIComponent(player.number)%>'>
+                    <span class='glyphicon glyphicon-plus'></span>
+                    </a>
+                <% } %>
+                <% if (player.beingMonitored) { %>
+                    <span class='glyphicon glyphicon-eye-open'>&nbsp</span>
+                <% } %>
+                <% if (player.inTournament) { %>
+                    <span class='glyphicon glyphicon-tower'>&nbsp</span>
+                <% } %>
+                </div>
+
+            </div>
+        <% }) %>
+    </main>
+</body>
+</html>

@@ -13,3 +13,4 @@ env.js
 log/
 db/players.db
 db/dataStore/*
+settings.json

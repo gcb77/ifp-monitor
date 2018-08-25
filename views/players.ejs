@@ -1,0 +1,66 @@
+<html lang="en">
+
+<head>
+    <% include ../partials/head %>
+</head>
+
+<body>
+    <header>
+        <% include ../partials/nav %>
+    </header>
+    <main class="container-fluid">
+        <form method="GET" action="addPlayer">
+            <div class="form-inline">
+                <div class="form-group">
+                    <div class="col-sm-5 text-nowrap">
+                        NAME:
+                        <input type=text name="name">
+                    </div>
+                    <div class="col-sm-5 text-nowrap">
+                        NUMBER:
+                        <input type=text name="number">
+                    </div>
+                    <div class="col-sm-2">
+                        <input type="submit" value="Add" class="btn btn-primary" />
+                    </div>
+                </div>
+            </div>
+        </form>
+        <br>
+        <hr>
+
+        <% for ( player of players ) { %>
+            <div class="row">
+                <div class="col col-xs-3"> <%- player.name %>
+                        <% if (player.notifications) { %>
+                        <span class="badge">
+                            <%-player.notifications%>
+                        </span>
+                        <% } %>
+                </div>
+                <div class="col col-xs-3">
+                    <%- player.number %>
+                </div>
+                <div class="col col-xs-3">
+                    <% if (player.enabled) { %>
+                        <a href='/setMonitorStatus/<%=encodeURIComponent(player.name)%>/false'>
+                            <span class='glyphicon glyphicon-stop'></span>
+                        </a>
+                    <% } else { %>
+                        <a href='/setMonitorStatus/<%=encodeURIComponent(player.name)%>/true'>
+                            <span class='glyphicon glyphicon-play'></span>
+                        </a>
+                    <% } %>
+                </div>
+                <div class="col col-xs-3">
+                    <a href='/remove/<%=encodeURIComponent(player.number)%>'>
+                        <span class='glyphicon glyphicon-remove'></span>
+                    </a>
+                </div>
+            </div>
+            <br>
+            <% } %>
+
+    </main>
+</body>
+</html>

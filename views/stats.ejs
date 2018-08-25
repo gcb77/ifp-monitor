@@ -1,0 +1,29 @@
+<html lang="en">
+
+<head>
+    <% include ../partials/head %>
+</head>
+
+<body>
+    <header>
+        <% include ../partials/nav %>
+    </header>
+    <main>
+        <ul>
+            <li>
+                <b>Monitoring <%- stats.monitoredPlayers.length %> players </b>
+            <li>
+            <b>Notifications Sent: </b><%- stats.notificationsSent %>
+            <% if (stats.started) { %>
+            <li>
+                <b>Running for: </b>
+                <%- Math.round((Date.now() - stats.started) / 1000 / 60) %> minutes
+            </li>
+            <% } %>
+        </ul>
+    </hr>
+    </main>
+</body>
+
+</html>
+ 
