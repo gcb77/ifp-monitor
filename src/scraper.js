@@ -4,8 +4,8 @@ function findMatches(data) {
   var dt = cheerio.load(data)
   var tbl = dt('#MatchesInProgressDisplay1_dgMatchesProgress')
   var matches = []
-  tbl.find('tr').each(function(matchRowNum, matchRow) {
-    if(matchRowNum == 0) {
+  tbl.find('tr').each(function (matchRowNum, matchRow) {
+    if (matchRowNum == 0) {
       return
     }
     var event = matchRow.children[1].children[1].children[0].data
@@ -32,16 +32,16 @@ function findMatches(data) {
 
 function findPlayers(matches, players) {
   var playersFound = {}
-  matches.forEach(function(match) {
-    players.forEach(function(player) {
+  matches.forEach(function (match) {
+    players.forEach(function (player) {
 
       //Remove any literal '.' characters from the search
       let cp = player.replace('.', '')
 
-      var re = new RegExp('\\b'+cp+'\\b', 'i')
-      if(re.test(match.team1)) {
+      var re = new RegExp('\\b' + cp + '\\b', 'i')
+      if (re.test(match.team1)) {
         playersFound[player] = match
-      } else if(re.test(match.team2)) {
+      } else if (re.test(match.team2)) {
         playersFound[player] = match
       }
     })

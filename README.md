@@ -10,3 +10,11 @@ Copy `sample_run.sh` to `run.sh`, and add your twilio credentials, and optionall
 
 #### Testing
 
+npm run debugServer
+npm run debug
+
+Access the UI at http://localhost:8080
+Send POST requests (x-www-form-urlencoded) to http://localhost:8080/messageIn using PostMan with:
+* Body: user
+* From: number
+

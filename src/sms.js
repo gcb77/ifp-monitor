@@ -7,7 +7,7 @@ var Promise = require('bluebird')
 
 //require the Twilio module and create a REST client
 var client
-if(process.env.SMS_DISABLED) {
+if (process.env.SMS_DISABLED) {
   //We're not sending SMS
 } else {
   client = require('twilio')(accountSid, authToken);
@@ -18,20 +18,20 @@ if(process.env.SMS_DISABLED) {
  * @param message
  * @return Promise
  */
-var sendMessage = function(number, message) {
-  if(process.env.SMS_DISABLED) {
-    return new Promise(function(resolve, reject) {
+var sendMessage = function (number, message) {
+  if (process.env.SMS_DISABLED) {
+    return new Promise(function (resolve, reject) {
       console.log("SENDING to : " + number + " : " + message)
       resolve()
     })
   } else {
-    return new Promise(function(resolve, reject) {
+    return new Promise(function (resolve, reject) {
       client.messages.create({
         to: number,
         from: '4252303559',
         body: message,
       }, function (err, message) {
-        if(err) {
+        if (err) {
           winston.error("Error sending SMS message: ", err)
           reject(err)
         } else {

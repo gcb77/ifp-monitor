@@ -5,12 +5,14 @@ const winston = require('winston')
 require('./env.js')
 
 //Make required folders
-if(!fs.existsSync('./log')) {
+if (!fs.existsSync('./log')) {
   fs.mkdirSync('./log')
 }
 
 //Configure logging
-winston.add(winston.transports.File, { filename: 'log/ifpmon.log' });
+winston.add(winston.transports.File, {
+  filename: 'log/ifpmon.log'
+});
 winston.remove(winston.transports.Console);
 
 //Start the server

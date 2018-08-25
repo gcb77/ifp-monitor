@@ -17,9 +17,12 @@ const stripStateRegEx = /\s*\(.+\)\s*$/
 let serverUrl = 'http://ifp.everguide.com'
 let adminNumber = process.env['ADMIN_NUMBER']
 
-let playersDatabase = new Datastore({filename: 'db/players.db', autoload: true})
+let playersDatabase = new Datastore({
+  filename: 'db/players.db',
+  autoload: true
+})
 
-if(process.env.SERVER_URL) {
+if (process.env.SERVER_URL) {
   serverUrl = process.env.SERVER_URL
 }
 
@@ -27,7 +30,7 @@ if(process.env.SERVER_URL) {
  * Structure to keep internal data
  * @type {{monitoredPlayers: {}, notifiedPlayers: {}, registrationResponse: string}}
  */
-function newInternalServerData () {
+function newInternalServerData() {
   return {
     monitoredPlayers: {},
     notifiedPlayers: {},
@@ -62,13 +65,13 @@ function loadSavedPlayers() {
     stats.monitoredPlayers = Object.keys(internalServerData.monitoredPlayers)
 
     let promises = []
-    Object.keys(internalServerData.monitoredPlayers).forEach(function(name) {
+    Object.keys(internalServerData.monitoredPlayers).forEach(function (name) {
       promises.push(updatePlayerDb(name, internalServerData.monitoredPlayers[name].number))
     })
-    Promise.all(promises).then(function() {
+    Promise.all(promises).then(function () {
       winston.info("Saved player list synchronized.")
     })
-  } catch(err) {
+  } catch (err) {
     winston.warn("Unable to read saved players file")
   }
 }
@@ -77,15 +80,17 @@ function loadSavedPlayers() {
 loadSavedPlayers()
 
 function monitorStatus(name, status) {
-  if(internalServerData.monitoredPlayers[name]) {
+  if (internalServerData.monitoredPlayers[name]) {
     internalServerData.monitoredPlayers[name].enabled = status
   }
   fs.writeFileSync(playersFileName, JSON.stringify(internalServerData.monitoredPlayers))
 }
 
 function updatePlayerDb(name, number) {
-  return new Promise(function(resolve,reject) {
-    playersDatabase.findOne({name: name}, function(err, result) {
+  return new Promise(function (resolve, reject) {
+    playersDatabase.findOne({
+      name: name
+    }, function (err, result) {
       if (err) {
         winston.error("Unable to query players database!", err)
         reject("Unable to query players database: " + err)
@@ -93,7 +98,9 @@ function updatePlayerDb(name, number) {
         if (result.number !== number) {
           result.number = number
         }
-        playersDatabase.update({_id: result._id}, result, {}, function (err, res) {
+        playersDatabase.update({
+          _id: result._id
+        }, result, {}, function (err, res) {
           resolve(res)
         })
       } else {
@@ -110,14 +117,14 @@ function updatePlayerDb(name, number) {
 
 
 function addMonitoredPlayer(name, number) {
-  if(!name) {
+  if (!name) {
     return Promise.reject(new Error("Invalid name: " + name))
   }
 
-  let addToMonitor = new Promise(function(resolve, reject) {
-    if(internalServerData.monitoredPlayers[name]) {
+  let addToMonitor = new Promise(function (resolve, reject) {
+    if (internalServerData.monitoredPlayers[name]) {
       let msg = name + " already monitored"
-      if(number != internalServerData.monitoredPlayers[name].number) {
+      if (number != internalServerData.monitoredPlayers[name].number) {
         let msg = name + " is currently being monitored by someone else"
       }
       let err = new Error(msg)
@@ -142,7 +149,7 @@ function addMonitoredPlayer(name, number) {
     resolve()
   })
 
-  return updatePlayerDb(name, number).then(function() {
+  return updatePlayerDb(name, number).then(function () {
     return addToMonitor
   })
 }
@@ -224,7 +231,7 @@ function processMatchPage(html) {
 function monitorFunction() {
 
   //Only run if there are players to monitor
-  if(Object.keys(internalServerData.monitoredPlayers).length > 0) {
+  if (Object.keys(internalServerData.monitoredPlayers).length > 0) {
 
     //Make request to page
     request(serverUrl + '/commander/tour/public/MatchList.aspx', function (err, response, html) {
@@ -233,13 +240,13 @@ function monitorFunction() {
       if (!err && response.statusCode === 200) {
 
         //Notify after a failure that we are back online
-        if(notifiedProblems) {
+        if (notifiedProblems) {
           notifiedProblems = false
           sms.sendMessage(adminNumber, "Functionality restored").catch(localErrorHandler)
         }
         try {
           processMatchPage(html)
-        } catch(err) {
+        } catch (err) {
           winston.error("Failed to process matches page: " + err)
         }
       } else {
@@ -249,7 +256,7 @@ function monitorFunction() {
         if (!notifiedProblems) {
           let status = response ? response.status : '?'
           let msg = "Request failed.. status: " + status
-          if(err) {
+          if (err) {
             msg += ' error: ' + err
           }
           sms.sendMessage(adminNumber, msg).catch(localErrorHandler)
@@ -267,7 +274,7 @@ function monitorFunction() {
  */
 function monitorStart() {
   //Check to make sure we're not monitoring already
-  if(monitorInterval) {
+  if (monitorInterval) {
     return
   }
 
@@ -275,7 +282,7 @@ function monitorStart() {
     //Read current notifications from file
     let notifications = fs.readFileSync(notificationsFileName)
     internalServerData.notifiedPlayers = JSON.parse(notifications)
-  } catch(err) {
+  } catch (err) {
     //We might possibly send duplicate notifications here if we fail to read the notification file
   }
 
@@ -286,7 +293,7 @@ function monitorStart() {
     //Check return status
     if (!err && response.statusCode === 200) {
       let name = scraper.parseTournamentName(html)
-      tournamentUtils.doStart(name).then(function() {
+      tournamentUtils.doStart(name).then(function () {
         //Set up a monitoring interval
         monitorInterval = setInterval(monitorFunction, monitoringInterval)
       })
@@ -297,7 +304,7 @@ function monitorStart() {
 }
 
 function archiveTournament() {
-  return tournamentUtils.archiveTournament().then(function() {
+  return tournamentUtils.archiveTournament().then(function () {
     stats = newStats()
     internalServerData = newInternalServerData()
   })
@@ -306,7 +313,7 @@ function archiveTournament() {
 function monitorStop() {
   delete stats.started
   stats.stopped = Date.now()
-  if(monitorInterval) {
+  if (monitorInterval) {
     clearInterval(monitorInterval)
   }
   monitorInterval = undefined
@@ -321,29 +328,29 @@ function getMonitoredPlayers() {
 }
 
 function removeMonitoredNumber(number) {
-  return new Promise(function(resolve, reject) {
+  return new Promise(function (resolve, reject) {
     let removedNames = []
-    Object.keys(internalServerData.monitoredPlayers).forEach(function(name) {
-      if(number === internalServerData.monitoredPlayers[name].number) {
+    Object.keys(internalServerData.monitoredPlayers).forEach(function (name) {
+      if (number === internalServerData.monitoredPlayers[name].number) {
         winston.info("Removing " + name + " with number " + number)
         delete internalServerData.monitoredPlayers[name]
         let idx = stats.monitoredPlayers.indexOf(name)
-        if(idx >= 0) {
-          stats.monitoredPlayers.splice(idx,1)
+        if (idx >= 0) {
+          stats.monitoredPlayers.splice(idx, 1)
         }
         removedNames.push(name)
       }
     })
-    
+
     //Persist the new player structure
     fs.writeFileSync(playersFileName, JSON.stringify(internalServerData.monitoredPlayers))
-    
+
     resolve(removedNames)
-  }).then(function(names) {
-    if(names && names.length > 0) {
+  }).then(function (names) {
+    if (names && names.length > 0) {
       let msg = 'No longer monitoring: ' + names.join(', ');
       sms.sendMessage(number, msg)
-      sms.sendMessage(adminNumber, "Removed " + number + " from monitor (" + names.join(', ') + ')' )
+      sms.sendMessage(adminNumber, "Removed " + number + " from monitor (" + names.join(', ') + ')')
     }
     return names;
   })
@@ -359,12 +366,12 @@ function playerSearch(searchText) {
     searchText = searchText.replace(stripStateRegEx, '')
 
     //Don't perform a search on anything that's 3 characters or less
-    if(originalSearchText.length < 4) {
+    if (originalSearchText.length < 4) {
       return resolve([])
     }
 
     let ts = Date.now()
-    let url = serverUrl + '/commander/internal/ComboStreamer.aspx?e=users&rcbID=R&rcbServerID=R&text='+searchText+'&comboText=&comboValue=&skin=VSNet&external=true&timeStamp='+ts
+    let url = serverUrl + '/commander/internal/ComboStreamer.aspx?e=users&rcbID=R&rcbServerID=R&text=' + searchText + '&comboText=&comboValue=&skin=VSNet&external=true&timeStamp=' + ts
 
     request({
       url: url,
@@ -372,7 +379,7 @@ function playerSearch(searchText) {
         'Content-Type': 'application/json; charset=utf-8'
       }
     }, function (err, response, body) {
-      if(err) {
+      if (err) {
         winston.error("Error searching player names: ", err)
         reject(err)
       } else {
@@ -391,10 +398,10 @@ function playerSearch(searchText) {
           let namesHash = {}
 
           //Iterate over players
-          resp.Items.forEach(function(item) {
-            if(re.test(item.Text)) {
+          resp.Items.forEach(function (item) {
+            if (re.test(item.Text)) {
               //Strip the state from the matched name and add it to the names hash
-              namesHash[item.Text.replace(stripStateRegEx,'')] = true;
+              namesHash[item.Text.replace(stripStateRegEx, '')] = true;
             }
           })
           //Get the object keys of the hash as the name
@@ -402,15 +409,15 @@ function playerSearch(searchText) {
 
 
           //If multiple matches, but one matches exactly, use it
-          let exactMatcExp = new RegExp('^'+originalSearchText.replace(stripStateRegEx, '')+'$', 'i')
-          matches.forEach(function(thisMatch) {
-            if(exactMatcExp.test(thisMatch)) {
+          let exactMatcExp = new RegExp('^' + originalSearchText.replace(stripStateRegEx, '') + '$', 'i')
+          matches.forEach(function (thisMatch) {
+            if (exactMatcExp.test(thisMatch)) {
               matches = [thisMatch]
             }
           })
 
           //If nothing matched attempt to break down the name and try again
-          if(matches.length === 0) {
+          if (matches.length === 0) {
             let parts = originalSearchText.split(/\s+/)
 
             // If its a bunch of words its probably not a name
@@ -418,7 +425,7 @@ function playerSearch(searchText) {
 
               // Strip the last word and try again
               playerSearch(originalSearchText.replace(/\s+[^\s*]+$/, '')).then(function (res) {
-                if(res.length === 0) {
+                if (res.length === 0) {
                   // Since stripping the last word didn't work, try stripping the first word out and try searching again
                   playerSearch(originalSearchText.replace(/^[^\s*]+/, '')).then(function (res) {
                     resolve(res)
@@ -434,7 +441,7 @@ function playerSearch(searchText) {
             } else {
               resolve([])
             }
-          } else if(matches.length === 1) {
+          } else if (matches.length === 1) {
             //Since we've found the matching player, strip the state information from the name
             matches[0] = matches[0].replace(stripStateRegEx, '');
             resolve(matches)
@@ -442,7 +449,7 @@ function playerSearch(searchText) {
             resolve(matches)
           }
 
-        } catch(er) {
+        } catch (er) {
           winston.error("Unable to parse response when searching for player: ", er)
           reject(er)
         }
@@ -453,27 +460,27 @@ function playerSearch(searchText) {
 }
 
 function getPlayerDb() {
-  return new Promise(function(resolve, reject) {
-    playersDatabase.find({}, function(err, data) {
-      if(err) {
+  return new Promise(function (resolve, reject) {
+    playersDatabase.find({}, function (err, data) {
+      if (err) {
         reject(err)
       } else {
         // sort the players alphabetically by name
-        data.sort(function(a, b) {
-          if(a.name < b.name) {
+        data.sort(function (a, b) {
+          if (a.name < b.name) {
             return -1
           }
-          if(a.name > b.name) {
+          if (a.name > b.name) {
             return 1
           }
           return 0
         })
-        tournamentUtils.getTournamentInfo().then(function(td) {
-          data.forEach(function(player) {
-            if(td.players[player.name]) {
+        tournamentUtils.getTournamentInfo().then(function (td) {
+          data.forEach(function (player) {
+            if (td.players[player.name]) {
               player.inTournament = true
             }
-            if(internalServerData.monitoredPlayers[player.name]) {
+            if (internalServerData.monitoredPlayers[player.name]) {
               player.beingMonitored = true
             }
           })
@@ -500,10 +507,10 @@ module.exports = {
   playerSearch: playerSearch,
   getPlayerDb: getPlayerDb,
   notifyAdmin: notifyAdmin,
-  getRegistrationResponse: function() {
+  getRegistrationResponse: function () {
     return internalServerData.registrationResponse
   },
-  setRegistrationResponse: function(msg) {
+  setRegistrationResponse: function (msg) {
     internalServerData.registrationResponse = msg
   }
 }

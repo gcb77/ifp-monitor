@@ -3,6 +3,7 @@ var basicAuth = require('express-basic-auth')
 var bodyParser = require('body-parser')
 var fs = require('fs')
 var winston = require('winston')
+var debug = require('debug')('ifp-monitor:main')
 
 var monitor = require('./monitor.js')
 
@@ -18,19 +19,19 @@ let receivedMessages = dataStore.getDatastore('receivedMessages');
 var app = express()
 
 //Use body-parser for messageIn
-app.use(['/messageIn','/setRegistrationResponse'], bodyParser.urlencoded({
+app.use(['/messageIn', '/setRegistrationResponse'], bodyParser.urlencoded({
   extended: true
 }))
 
-if(user && password) {
-  winston.info("Authentication enabled with user: " + user )
-  var config={}
+if (user && password) {
+  winston.info("Authentication enabled with user: " + user)
+  var config = {}
   config[user] = password
 
 
   //Auto-inject authentication for 'messageIn'
-  app.use('/messageIn', function(req,res,next) {
-    req.headers['authorization'] = 'Basic ' + Buffer.from(user+':'+password).toString('base64')
+  app.use('/messageIn', function (req, res, next) {
+    req.headers['authorization'] = 'Basic ' + Buffer.from(user + ':' + password).toString('base64')
     next()
   })
 
@@ -45,7 +46,7 @@ if(user && password) {
 }
 
 var port = 8081
-if(process.env['HOST_PORT']) {
+if (process.env['HOST_PORT']) {
   port = process.env['HOST_PORT']
 }
 
@@ -55,11 +56,12 @@ function getUnauthorizedResponse(req) {
     'No credentials provided'
 }
 
-app.get('/', function(req, res) {
+app.get('/', function (req, res) {
+  debug('Request for /')
   var send = []
   send.push(fs.readFileSync('views/head.html'))
   send.push(fs.readFileSync('views/nav.html'))
-  if(monitor.getStats().started) {
+  if (monitor.getStats().started) {
     send.push("<a href='/stop' class='btn btn-danger'>Stop</a><br>")
   } else {
     send.push("<a href='/start' class='btn btn-success'>Start</a><br>")
@@ -86,28 +88,30 @@ app.get('/', function(req, res) {
 
   send.push('</div>')
 
-  if(!monitor.getStats().started && fs.existsSync('db/notifications.json')) {
+  if (!monitor.getStats().started && fs.existsSync('db/notifications.json')) {
     send.push("<hr><a href='/archive' class='btn btn-warning'>Archive</a><br>")
   }
   send.push('</form>')
   res.send(send.join(''))
 })
 
-app.post('/setRegistrationResponse', function(req, res) {
+app.post('/setRegistrationResponse', function (req, res) {
+  debug('Request for /setRegistrationResponse: ' + req.body.message)
   monitor.setRegistrationResponse(req.body.message)
   res.redirect('/')
 })
 
-app.get('/monitor', function(req,res) {
+app.get('/monitor', function (req, res) {
+  debug('Request for /monitor')
   var send = []
   send.push(fs.readFileSync('views/head.html'))
   send.push(fs.readFileSync('views/nav.html'))
   var stats = monitor.getStats()
   send.push("<ul>")
-  send.push("<li><b>Monitoring "+stats.monitoredPlayers.length + " players </b>")
-  send.push("<li><b>Notifications Sent: </b>"+stats.notificationsSent)
-  if(stats.started) {
-    send.push("<li><b>Running for: </b>"+Math.round((Date.now() - stats.started)/1000/60) + " minutes")
+  send.push("<li><b>Monitoring " + stats.monitoredPlayers.length + " players </b>")
+  send.push("<li><b>Notifications Sent: </b>" + stats.notificationsSent)
+  if (stats.started) {
+    send.push("<li><b>Running for: </b>" + Math.round((Date.now() - stats.started) / 1000 / 60) + " minutes")
   }
   send.push("</ul>")
   send.push("</hr>")
@@ -115,17 +119,20 @@ app.get('/monitor', function(req,res) {
   res.send(send.join('\n'))
 })
 
-app.get('/setMonitorStatus/:name/:status', function(req, res) {
+app.get('/setMonitorStatus/:name/:status', function (req, res) {
+  debug('Request for /setMonitorStatus for ' + req.params)
   monitor.setMonitorStatusForPlayer(req.params.name, JSON.parse(req.params.status))
   res.redirect('/players')
 })
 
-app.get('/remove/:number', function(req, res) {
+app.get('/remove/:number', function (req, res) {
+  debug('Request for /remove for ' + req.params.number)
   monitor.removeMonitorNumber(req.params.number)
   res.redirect('/players')
 })
 
-app.get('/log', function(req, res) {
+app.get('/log', function (req, res) {
+  debug('Request for /log')
   var send = []
 
   send.push(fs.readFileSync('views/head.html'))
@@ -138,9 +145,9 @@ app.get('/log', function(req, res) {
   //Show last 100 notifications in reverse order
   send.push('<div class="list-group">')
   var len = stats.notificationLog.length
-  for(var i = 1; i < 100; i+=1){
-    if(len-i >= 0) {
-      send.push('<div class="list-item">'+stats.notificationLog[len-i]+'</div><br>')
+  for (var i = 1; i < 100; i += 1) {
+    if (len - i >= 0) {
+      send.push('<div class="list-item">' + stats.notificationLog[len - i] + '</div><br>')
     }
   }
   send.push('</div>')
@@ -148,7 +155,8 @@ app.get('/log', function(req, res) {
   res.send(send.join('\n'))
 })
 
-app.get('/players', function(req, res) {
+app.get('/players', function (req, res) {
+  debug('Request for /players')
   var send = []
 
   send.push(fs.readFileSync('views/head.html'))
@@ -171,19 +179,19 @@ app.get('/players', function(req, res) {
   let players = monitor.getMonitoredPlayers()
   let stats = monitor.getStats()
 
-  Object.keys(players).forEach(function(player) {
+  Object.keys(players).forEach(function (player) {
     send.push('<div class="row">')
     send.push('<div class="col col-xs-3">')
     send.push(player)
-    if(stats.notificationsPerPlayer[player]) {
-      send.push('<span class="badge">'+stats.notificationsPerPlayer[player]+'</span>')
+    if (stats.notificationsPerPlayer[player]) {
+      send.push('<span class="badge">' + stats.notificationsPerPlayer[player] + '</span>')
     }
     send.push('</div>')
     send.push('<div class="col col-xs-3">')
     send.push(players[player].number)
     send.push('</div>')
     send.push('<div class="col col-xs-3">')
-    if(players[player].enabled) {
+    if (players[player].enabled) {
       send.push("<a href='/setMonitorStatus/" + encodeURIComponent(player) + "/false'><span class='glyphicon glyphicon-stop'></span> </a>")
     } else {
       send.push("<a href='/setMonitorStatus/" + encodeURIComponent(player) + "/true'><span class='glyphicon glyphicon-play'></span></a>")
@@ -200,35 +208,41 @@ app.get('/players', function(req, res) {
   res.send(send.join('\n'))
 })
 
-app.get('/addPlayer', function(req,res) {
-  monitor.addMonitoredPlayer(req.query.name, req.query.number).then(function() {
+app.get('/addPlayer', function (req, res) {
+  debug('Request for /addPlayer : ', req.query)
+  monitor.addMonitoredPlayer(req.query.name, req.query.number).then(function () {
     res.redirect('/players')
-  }, function(err) {
+  }, function (err) {
     res.send(err.message)
   })
 })
 
-app.get('/start', function(req,res) {
+app.get('/start', function (req, res) {
+  debug('Request for /start')
   winston.info("START called to monitor users")
   monitor.monitorStart()
   res.redirect('/')
   // res.send("Started<br><a href='/'>Home</a>")
 })
 
-app.get('/stop', function(req,res) {
+app.get('/stop', function (req, res) {
+  debug('Request for /stop')
   winston.info("STOP called to monitor users")
   monitor.monitorStop()
   res.redirect('/')
   // res.send("Stopped")
 })
 
-app.get('/archive', function(req, res) {
+app.get('/archive', function (req, res) {
+  debug('Request for /archive')
   winston.info("ARCHIVE called")
   monitor.archiveTournament()
   res.redirect('/')
 })
 
-app.post('/messageIn', function(req, res) {
+app.post('/messageIn', function (req, res) {
+  debug('Received SMS message')
+  debug('SMS message body: ', req.body)
   /*
    if REMOVE track number and remove from monitor
      monitor.removeMonitorNumber(number)
@@ -240,42 +254,45 @@ app.post('/messageIn', function(req, res) {
    */
 
   //Save the incoming text message for later auditing
-  receivedMessages.insert({time: Date.now(), body: req.body})
+  receivedMessages.insert({
+    time: Date.now(),
+    body: req.body
+  })
   var msg = req.body.Body
   var number = req.body.From
 
-  if(!number || !msg) {
+  if (!number || !msg) {
     res.send('<Response><Message>Invalid Request</Message></Response>')
   }
 
   //Remove whitespace before and after the message
-  if(msg) {
+  if (msg) {
     msg = msg.trim()
   }
 
-  number = number.replace('+1','')
-  if(!msg || msg.length < 4) {
+  number = number.replace('+1', '')
+  if (!msg || msg.length < 4) {
     res.send("<Response><Message>\nInvalid request. Send 'REMOVE' or 'Player Name'\n</Message></Response>")
-  } else if(msg.match(/^REMOVE/i)) {
-    monitor.removeMonitorNumber(number).then(function(names) {
-      if(names && names.length > 0) {
+  } else if (msg.match(/^REMOVE/i)) {
+    monitor.removeMonitorNumber(number).then(function (names) {
+      if (names && names.length > 0) {
         res.send('<Response><Message/></Response>')
       } else {
-        res.send('<Response><Message>No players being monitored with number '+number+'</Message></Response>')
+        res.send('<Response><Message>No players being monitored with number ' + number + '</Message></Response>')
       }
-    }).catch(function(err) {
+    }).catch(function (err) {
       res.send('<Response><Message>Service error... admin has been notified.</Message></Response>')
       monitor.notifyAdmin("Error trying to remove notifications for " + number + ": " + err.message)
     })
   } else {
-    monitor.playerSearch(msg).then(function(players) {
-      if(!players || players.length <= 0) {
+    monitor.playerSearch(msg).then(function (players) {
+      if (!players || players.length <= 0) {
         monitor.notifyAdmin("From " + number + " Not Found : " + msg)
         res.send("<Response><Message>Your message could not be matched to a player in the IFP system, please verify the name and try again.</Message></Response>")
         res.end()
       } else if (players.length > 5) {
         //Notify too many matches
-        res.send("<Response><Message>Your search for "+msg+" produced " + players.length + " results, try again with a more specific name.</Message></Response>")
+        res.send("<Response><Message>Your search for " + msg + " produced " + players.length + " results, try again with a more specific name.</Message></Response>")
         res.end()
       } else if (players.length > 1) {
         res.send("<Response><Message>Your search for " + msg + " found " + players.join(", ") + " try again with a more specific name.</Message></Response>")
@@ -284,29 +301,30 @@ app.post('/messageIn', function(req, res) {
       } else {
         //Subscribe
         var playerName = players[0]
-        monitor.addMonitoredPlayer(playerName, number).then(function() {
+        monitor.addMonitoredPlayer(playerName, number).then(function () {
           res.send('<Response/>')
           res.end()
-        }, function(err) {
+        }, function (err) {
           winston.warn("Message: " + msg + " caused error " + err.message)
-          monitor.notifyAdmin(number + " message '"+msg+"' caused error: " + err.message)
-          if(err.showUser) {
-            res.send('<Response><Message>Error: '+err.message+'</Message></Response>')
+          monitor.notifyAdmin(number + " message '" + msg + "' caused error: " + err.message)
+          if (err.showUser) {
+            res.send('<Response><Message>Error: ' + err.message + '</Message></Response>')
           } else {
             res.send('<Response><Message>Service error... unable to subscribe at this time.</Message></Response>')
           }
         })
       }
-    }, function(err) {
-      winston.error("Error searching for players matching '"+msg+"': ", err)
-      monitor.notifyAdmin(number + " message '"+msg+"' caused error: " + err.message)
+    }, function (err) {
+      winston.error("Error searching for players matching '" + msg + "': ", err)
+      monitor.notifyAdmin(number + " message '" + msg + "' caused error: " + err.message)
       res.send('<Response><Message>Service error... unable to subscribe at this time.</Message></Response>')
       res.end()
     })
   }
 })
 
-app.get('/playerDb', function(req, res) {
+app.get('/playerDb', function (req, res) {
+  debug('Request for playerDb')
   var send = []
 
   send.push(fs.readFileSync('views/head.html'))
@@ -315,9 +333,9 @@ app.get('/playerDb', function(req, res) {
   var monitoredPlayers = monitor.getMonitoredPlayers()
   var playerNames = Object.keys(monitoredPlayers)
 
-  monitor.getPlayerDb().then(function(data) {
+  monitor.getPlayerDb().then(function (data) {
     send.push("<div class='list-group'>")
-    data.forEach(function(player) {
+    data.forEach(function (player) {
       send.push("<div class='list-group-item row'>")
 
       send.push(" <div class='col col-xs-4'>")
@@ -329,18 +347,18 @@ app.get('/playerDb', function(req, res) {
       send.push(" </div>")
 
       send.push(" <div class='col col-xs-4'>")
-      if(!playerNames.includes(player.name)) {
+      if (!playerNames.includes(player.name)) {
         send.push(
-          "<a href='/addPlayer?name="
-          + encodeURIComponent(player.name)
-          + "&number="
-          + encodeURIComponent(player.number)
-          + "'><span class='glyphicon glyphicon-plus'></span> </a>")
+          "<a href='/addPlayer?name=" +
+          encodeURIComponent(player.name) +
+          "&number=" +
+          encodeURIComponent(player.number) +
+          "'><span class='glyphicon glyphicon-plus'></span> </a>")
       }
-      if(player.beingMonitored) {
+      if (player.beingMonitored) {
         send.push("<span class='glyphicon glyphicon-eye-open'>&nbsp</span>")
       }
-      if(player.inTournament) {
+      if (player.inTournament) {
         send.push("<span class='glyphicon glyphicon-tower'>&nbsp</span>")
       }
       send.push(" </div>")
@@ -350,7 +368,7 @@ app.get('/playerDb', function(req, res) {
     send.push("</div>")
     res.send(send.join(''))
     res.end()
-  }, function(err) {
+  }, function (err) {
     winston.error("Failed to query player database: ", err)
     send.push('ERROR!')
     res.send(send.join(''))
@@ -360,7 +378,7 @@ app.get('/playerDb', function(req, res) {
 
 app.listen(port)
 
-winston.info("Program running on "+port+", monitor currently stopped...")
-console.log("Program running on "+port+", monitor currently stopped...")
+winston.info("Program running on " + port + ", monitor currently stopped...")
+console.log("Program running on " + port + ", monitor currently stopped...")
 
 exports = module.exports = app;
