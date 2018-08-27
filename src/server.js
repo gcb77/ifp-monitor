@@ -83,9 +83,9 @@ app.get('/monitor', function (req, res) {
   })
 })
 
-app.get('/setMonitorStatus/:name/:status', function (req, res) {
+app.get('/setMonitorStatus/:number/:status', function (req, res) {
   debug('Request for /setMonitorStatus for ' + req.params)
-  monitor.setMonitorStatusForPlayer(req.params.name, JSON.parse(req.params.status))
+  monitor.setMonitorStatusForPlayer(req.params.number, JSON.parse(req.params.status))
   res.redirect('/players')
 })
 
@@ -111,14 +111,14 @@ app.get('/players', function (req, res) {
 
   let sendPlayers = []
 
-  Object.keys(players).forEach(function (player) {
+  Object.keys(players).forEach(function (number) {
     let o = {
-      name: player,
-      number: players[player].number,
-      enabled: players[player].enabled
+      names: players[number].names,
+      number: number,
+      enabled: players[number].enabled
     }
-    if (stats.notificationsPerPlayer[player]) {
-      o.notifications = stats.notificationsPerPlayer[player]
+    if (stats.notificationsPerNumber[number]) {
+      o.notifications = stats.notificationsPerNumber[number]
     }
     sendPlayers.push(o)
   })
@@ -127,7 +127,12 @@ app.get('/players', function (req, res) {
 
 app.get('/addPlayer', function (req, res) {
   debug('Request for /addPlayer : ', req.query)
-  monitor.addMonitoredPlayer(req.query.name, req.query.number).then(function () {
+  let number = req.query.number
+  number = number.replace('+1', '')
+  number = number.replace(/\s*/g, '')
+  number = number.replace('(', '')
+  number = number.replace(')', '')
+  monitor.addMonitoredPlayer(req.query.name, number).then(function () {
     res.redirect('/players')
   }, function (err) {
     res.send(err.message)
@@ -188,6 +193,10 @@ app.post('/messageIn', function (req, res) {
   }
 
   number = number.replace('+1', '')
+  number = number.replace(/\s*/g, '')
+  number = number.replace('(', '')
+  number = number.replace(')', '')
+ 
   if (!msg || msg.length < 4) {
     res.send("<Response><Message>\nInvalid request. Send 'REMOVE' or 'Player Name'\n</Message></Response>")
   } else if (msg.match(/^REMOVE/i)) {
@@ -201,6 +210,8 @@ app.post('/messageIn', function (req, res) {
       res.send('<Response><Message>Service error... admin has been notified.</Message></Response>')
       monitor.notifyAdmin("Error trying to remove notifications for " + number + ": " + err.message)
     })
+  } else if(monitor.getMonitoredPlayers()[number].names.length === 1) {
+    res.send(`<Response><Message>\nYou are already monitoring ${monitor.getMonitoredPlayers()[number].names}.  This application supports monitoring for only one person per number.\n</Message></Response>`)
   } else {
     monitor.playerSearch(msg).then(function (players) {
       if (!players || players.length <= 0) {

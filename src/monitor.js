@@ -53,7 +53,8 @@ function newStats() {
     monitoredPlayers: [],
     notificationsSent: 0,
     notificationLog: [],
-    notificationsPerPlayer: {}
+    notificationsPerPlayer: {},
+    notificationsPerNumber: {}
   }
 }
 
@@ -67,6 +68,7 @@ function loadSavedPlayers() {
 
     let promises = []
     Object.keys(internalServerData.monitoredPlayers).forEach(function (name) {
+      //TODO: add multiple numbers
       promises.push(updatePlayerDb(name, internalServerData.monitoredPlayers[name].number))
     })
     Promise.all(promises).then(function () {
@@ -80,9 +82,9 @@ function loadSavedPlayers() {
 //Load saved players at startup
 loadSavedPlayers()
 
-function monitorStatus(name, status) {
-  if (internalServerData.monitoredPlayers[name]) {
-    internalServerData.monitoredPlayers[name].enabled = status
+function monitorStatus(number, status) {
+  if (internalServerData.monitoredPlayers[number]) {
+    internalServerData.monitoredPlayers[number].enabled = status
   }
   fs.writeFileSync(playersFileName, JSON.stringify(internalServerData.monitoredPlayers))
 }
@@ -120,18 +122,28 @@ function updatePlayerDb(name, number) {
 function addMonitoredPlayer(name, number) {
   if (!name) {
     return Promise.reject(new Error("Invalid name: " + name))
+  } if (!number) {
+    return Promise.reject(new Error('Number is required to monitor'))
   }
 
-  let addToMonitor = new Promise(function (resolve, reject) {
-    if (internalServerData.monitoredPlayers[name]) {
-      let msg = name + " already monitored"
-      if (number != internalServerData.monitoredPlayers[name].number) {
-        let msg = name + " is currently being monitored by someone else"
+  return new Promise(function (resolve, reject) {
+    if (internalServerData.monitoredPlayers[number]) {
+      if (internalServerData.monitoredPlayers[number].names.includes(name)) {
+        let msg = `You have already registered ${name} on this device`
+        let err = new Error(msg)
+        err.showUser = true
+        return reject(err)
       }
-      let err = new Error(msg)
-      err.showUser = true
-      return reject(err)
+    } else {
+      // Assuming that since this is the first name requested on this number it should be the user
+      updatePlayerDb(name, number)
+      internalServerData.monitoredPlayers[number] = {
+        enabled: true,
+        names: []
+      }
     }
+
+    internalServerData.monitoredPlayers[number].names.push(name)
 
     //Send message to admin
     let responseStr = internalServerData.registrationResponse.replace('$player', name)
@@ -141,21 +153,43 @@ function addMonitoredPlayer(name, number) {
     sms.sendMessage(number, responseStr)
 
     //Track the monitored player
-    internalServerData.monitoredPlayers[name] = {
-      number: number,
-      enabled: true
-    }
+    // internalServerData.monitoredPlayers[number][name] = 0
     fs.writeFileSync(playersFileName, JSON.stringify(internalServerData.monitoredPlayers))
-    stats.monitoredPlayers = Object.keys(internalServerData.monitoredPlayers)
+    stats.monitoredPlayers = getMonitoredPlayerNames()
     resolve()
-  })
-
-  return updatePlayerDb(name, number).then(function () {
-    return addToMonitor
   })
 }
 
 
+/**
+ * Returns a list of all currently monitored players across all devices
+ */
+function getMonitoredPlayerNames() {
+  let internalMonitorObj = internalServerData.monitoredPlayers
+  let players = {}
+  for (const device in internalMonitorObj) {
+    for (name of internalMonitorObj[device].names) {
+      players[name] = true
+    }
+  }
+  return Object.keys(players)
+}
+
+
+function findNumbersToNotifyFor(player) {
+  let db = internalServerData.monitoredPlayers
+  let numbers = {}
+  for(const device in db) {
+    if(db[device].enabled) {
+      for(name of db[device].names) {
+        if(name === player) {
+          numbers[device] = true
+        }
+      }
+    }
+  }
+  return Object.keys(numbers)
+}
 
 function localErrorHandler(err) {
   winston.error(err)
@@ -177,43 +211,37 @@ function processMatchPage(html) {
   //matchUtils.notifyActivePlayers(currentMatches)
 
   //Use the scraping utility to find the players currently called up
-  let players = scraper.findPlayers(currentMatches, Object.keys(internalServerData.monitoredPlayers))
+  let players = scraper.findPlayers(currentMatches, getMonitoredPlayerNames())
 
   //Notify each player
   Object.keys(players).forEach(function (player) {
     let match = players[player]
     //Make a unique key for this notification so we don't repeat it: player, event, team1 and team2
-    let key = player + '_' + match.event + '_' + match.team1 + '_' + match.team2 + '_' + match.forPosition + '_' + match.table
-    if (internalServerData.notifiedPlayers[key] !== undefined) {
+    findNumbersToNotifyFor(player).forEach(number => {
+      let key = number + '_' + match.event + '_' + match.team1 + '_' + match.team2 + '_' + match.forPosition + '_' + match.table
+      if (internalServerData.notifiedPlayers[key] !== undefined) {
 
-      //Flag this notification as still active
-      internalServerData.notifiedPlayers[key] = 1
-    } else {
-      internalServerData.notifiedPlayers[key] = 1
-      let message = "Table " + match.table + " " + match.event + " " + match.team1 + " vs " + match.team2 + ' for ' + match.forPosition
-      if (internalServerData.monitoredPlayers[player].enabled) {
+        //Flag this notification as still active
+        internalServerData.notifiedPlayers[key] = 1
+      } else {
+        internalServerData.notifiedPlayers[key] = 1
+        let message = "Table " + match.table + " " + match.event + " " + match.team1 + " vs " + match.team2 + ' for ' + match.forPosition
         let dt = new Date()
-        winston.info(dt + " notifying " + player + "(" + internalServerData.monitoredPlayers[player].number + ") " + message)
-        sms.sendMessage(internalServerData.monitoredPlayers[player].number, message).catch(localErrorHandler)
+        winston.info(dt + " notifying " + player + "(" + number + ") " + message)
+        sms.sendMessage(number, message).catch(localErrorHandler)
         stats.notificationsSent += 1
         stats.notificationLog.push(
           ("00" + dt.getHours()).slice(-2) + ':' +
           ("00" + dt.getMinutes()).slice(-2) + ':' +
           ("00" + dt.getSeconds()).slice(-2) + ' ' +
-          player + " (" + internalServerData.monitoredPlayers[player].number + ") - " +
+          player + " (" + number + ") - " +
           message)
 
-        //keep counts of notifications per player
-        if (!stats.notificationsPerPlayer[player]) {
-          stats.notificationsPerPlayer[player] = 1
-        } else {
-          stats.notificationsPerPlayer[player]++
-        }
-
-      } else {
-        winston.warn("Player " + player + " is disabled, not sending notification")
+        //keep counts of notifications per player and number
+        stats.notificationsPerPlayer[player] = (1 + stats.notificationsPerPlayer[player]) || 1
+        stats.notificationsPerNumber[number] = (1 + stats.notificationsPerNumber[number]) || 1
       }
-    }
+    })
   })
 
   //Remove all notifications that are no longer active
@@ -331,30 +359,23 @@ function getMonitoredPlayers() {
   return internalServerData.monitoredPlayers
 }
 
-function removeMonitoredNumber(number) {
+function removeMonitoredNumber(numberToRemove) {
+  debug('removing number from monitoring: ', numberToRemove)
   return new Promise(function (resolve, reject) {
-    let removedNames = []
-    Object.keys(internalServerData.monitoredPlayers).forEach(function (name) {
-      if (number === internalServerData.monitoredPlayers[name].number) {
-        winston.info("Removing " + name + " with number " + number)
-        delete internalServerData.monitoredPlayers[name]
-        let idx = stats.monitoredPlayers.indexOf(name)
-        if (idx >= 0) {
-          stats.monitoredPlayers.splice(idx, 1)
-        }
-        removedNames.push(name)
-      }
-    })
+      let removedNames = internalServerData.monitoredPlayers[numberToRemove].names
+      winston.info("Removing " + removedNames + " from number " + numberToRemove)
+      delete internalServerData.monitoredPlayers[numberToRemove]
+      stats.monitoredPlayers = getMonitoredPlayerNames()
 
-    //Persist the new player structure
-    fs.writeFileSync(playersFileName, JSON.stringify(internalServerData.monitoredPlayers))
+      //Persist the new player structure
+      fs.writeFileSync(playersFileName, JSON.stringify(internalServerData.monitoredPlayers))
 
-    resolve(removedNames)
-  }).then(function (names) {
+      resolve(removedNames)
+    }).then(function (names) {
     if (names && names.length > 0) {
       let msg = 'No longer monitoring: ' + names.join(', ');
-      sms.sendMessage(number, msg)
-      sms.sendMessage(adminNumber, "Removed " + number + " from monitor (" + names.join(', ') + ')')
+      sms.sendMessage(numberToRemove, msg)
+      sms.sendMessage(adminNumber, "Removed " + numberToRemove + " from monitor (" + names.join(', ') + ')')
     }
     return names;
   })

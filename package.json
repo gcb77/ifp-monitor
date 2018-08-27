@@ -19,7 +19,7 @@
   },
   "scripts": {
     "start": "node app",
-    "debug": "DEBUG=ifp-monitor:* nodemon app",
+    "debug": "DEBUG=ifp-monitor:* nodemon --inspect ./app.js",
     "debugServer": "cd data; DEBUG=* nodemon local_server.js",
     "test": "mocha"
   },
