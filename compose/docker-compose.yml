@@ -2,7 +2,7 @@ version: '3.1'
 
 services:
   ifp-mon:
-    image: gcb77/ifp-mon:latest
+    image: registry.gitlab.com/gcb77/ifp-monitor:latest
     ports: 
       - 8080:8080
     volumes: 
