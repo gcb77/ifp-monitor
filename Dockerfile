@@ -6,7 +6,7 @@ VOLUME ["/app/db", "/app/config", "/app/log"]
 
 COPY package*.json ./
 
-RUN npm install
+RUN npm install --production
 
 COPY . .
 

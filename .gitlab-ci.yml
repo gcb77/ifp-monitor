@@ -19,3 +19,19 @@ run-unit-tests:
   script: 
     - npm install
     - npm run test
+
+build-container:
+  stage: package
+  image: docker:stable
+  services:
+    - docker:dind
+  variables:
+    DOCKER_HOST: tcp://docker:2375/
+    DOCKER_DRIVER: overlay2
+  script:
+    - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN registry.gitlab.com
+    - docker pull registry.gitlab.com/gcb77/ifp-monitor:latest
+    - docker build --cache-from registry.gitlab.com/gcb77/ifp-monitor:latest -t registry.gitlab.com/gcb77/ifp-monitor:latest .
+    - docker push registry.gitlab.com/gcb77/ifp-monitor:latest
+  only:
+    - deploy-latest
