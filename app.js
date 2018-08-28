@@ -2,7 +2,7 @@ const fs = require('fs')
 const winston = require('winston')
 
 //Load environment
-require('./env.js')
+require('./config/env.js')
 
 //Make required folders
 if (!fs.existsSync('./log')) {

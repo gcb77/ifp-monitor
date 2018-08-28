@@ -210,8 +210,8 @@ app.post('/messageIn', function (req, res) {
       res.send('<Response><Message>Service error... admin has been notified.</Message></Response>')
       monitor.notifyAdmin("Error trying to remove notifications for " + number + ": " + err.message)
     })
-  } else if(monitor.getMonitoredPlayers()[number].names.length === 1) {
-    res.send(`<Response><Message>\nYou are already monitoring ${monitor.getMonitoredPlayers()[number].names}.  This application supports monitoring for only one person per number.\n</Message></Response>`)
+  } else if(monitor.getMonitoredPlayers()[number] && monitor.getMonitoredPlayers()[number].names && monitor.getMonitoredPlayers()[number].names.length === 1) {
+    res.send(`<Response><Message>\nYou are currently monitoring ${monitor.getMonitoredPlayers()[number].names}.  This application supports monitoring for only one person per number.  Send a message of REMOVE if you want to reset and monitor someone else.\n</Message></Response>`)
   } else {
     monitor.playerSearch(msg).then(function (players) {
       if (!players || players.length <= 0) {
