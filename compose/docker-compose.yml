@@ -1,0 +1,11 @@
+version: '3.1'
+
+services:
+  ifp-mon:
+    image: gcb77/ifp-mon:latest
+    ports: 
+      - 8080:8080
+    volumes: 
+      - ./db:/app/db
+      - ./log:/app/log
+      - ./config:/app/config

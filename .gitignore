@@ -8,9 +8,14 @@ screenlog*
 .notifications
 messages/*.txt
 tmp/*
-env.js
+config/env.js
 *.log
 log/
 db/players.db
+db/notifications.json
+db/players.json
 db/dataStore/*
+compose/db
+compose/log
+compose/config
 settings.json

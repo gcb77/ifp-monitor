@@ -47,7 +47,7 @@ if (user && password) {
   winston.warn("No SECURE_USER or SECURE_PASSWORD provided, running with no authentication!")
 }
 
-var port = 8081
+var port = 8080
 if (process.env['HOST_PORT']) {
   port = process.env['HOST_PORT']
 }
