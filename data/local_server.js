@@ -12,13 +12,13 @@ app.get('/commander/tour/public/MatchList.aspx', function(req, res) {
 })
 
 app.get('/commander/internal/ComboStreamer.aspx', function(req, res) {
-  console.log("LOCAL SERVER: received player query, sending canned message")
+  console.log("LOCAL SERVER: received player query, sending canned message from ./users_sample_data.txt")
   res.send(fs.readFileSync('./users_sample_data.txt'))
   res.end()
 })
 
 app.get('/commander/tour/public/welcome.aspx', function(req, res) {
-  console.log("LOCAL SERVER: received welcome query, sending canned message")
+  console.log("LOCAL SERVER: received welcome query, sending canned message form welcome.html")
   res.send(fs.readFileSync('./welcome.html'))
   res.end()
 })

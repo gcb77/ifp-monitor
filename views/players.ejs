@@ -47,7 +47,7 @@
                     <% } %>
                     </div>
                 </div>
-                <div class="col col-xs-3">
+                <div class="col col-xs-2">
                     <% if (player.enabled) { %>
                         <a href='/setMonitorStatus/<%=encodeURIComponent(player.number)%>/false'>
                             <span class='glyphicon glyphicon-stop'></span>
@@ -58,10 +58,19 @@
                         </a>
                     <% } %>
                 </div>
-                <div class="col col-xs-3">
+                <div class="col col-xs-2">
                     <a href='/remove/<%=encodeURIComponent(player.number)%>'>
                         <span class='glyphicon glyphicon-remove'></span>
                     </a>
+                </div>
+                <div class="col col-xs-2">
+                    <% if (player.extras) { %>
+                        <span class='glyphicon glyphicon-star'></span>
+                    <% } else { %>
+                    <a href='/enableExtras/<%=encodeURIComponent(player.number)%>'>
+                        <span class='glyphicon glyphicon-star-empty'></span>
+                    </a>
+                    <% } %>
                 </div>
             </div>
             <br>

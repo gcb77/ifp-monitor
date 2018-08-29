@@ -10,6 +10,8 @@ var monitor = require('./monitor.js')
 var user = process.env['SECURE_USER']
 var password = process.env['SECURE_PASSWORD']
 
+let extrasMessage = 'This application supports monitoring for only one person per number.  Send a message of REMOVE if you want to reset and monitor someone else.'
+
 const dataStore = require('./dataStore')
 
 //Keep track of text messages received
@@ -21,7 +23,7 @@ var app = express()
 app.set('view engine', 'ejs')
 
 //Use body-parser for messageIn
-app.use(['/messageIn', '/setRegistrationResponse'], bodyParser.urlencoded({
+app.use(['/messageIn', '/setRegistrationResponse', '/setExtrasMessage'], bodyParser.urlencoded({
   extended: true
 }))
 
@@ -65,9 +67,16 @@ app.get('/', function (req, res) {
     started: monitor.getStats().started,
     monitorCount: monitor.getStats().monitoredPlayers.length,
     canArchive: !monitor.getStats().started && fs.existsSync('db/notifications.json'),
-    registerResponse: monitor.getRegistrationResponse()
+    registerResponse: monitor.getRegistrationResponse(),
+    extrasMessage
   })
 
+})
+
+app.post('/setExtrasMessage', function (req, res) {
+  debug('Request for /setExtrasMessage: ' + req.body.message)
+  extrasMessage = req.body.message
+  res.redirect('/')
 })
 
 app.post('/setRegistrationResponse', function (req, res) {
@@ -115,7 +124,8 @@ app.get('/players', function (req, res) {
     let o = {
       names: players[number].names,
       number: number,
-      enabled: players[number].enabled
+      enabled: players[number].enabled,
+      extras: players[number].extras
     }
     if (stats.notificationsPerNumber[number]) {
       o.notifications = stats.notificationsPerNumber[number]
@@ -160,6 +170,16 @@ app.get('/archive', function (req, res) {
   winston.info("ARCHIVE called")
   monitor.archiveTournament()
   res.redirect('/')
+})
+
+app.get('/enableExtras/:number', function (req, res) {
+  debug('Request for /enableExtras for ' + req.params.number)
+  monitor.enableExtraFeatures(req.params.number).then(result => {
+    res.redirect('/players')
+  }).catch(err => {
+    winston.error("Unable to enable extra features due to error: " + err)
+    res.redirect('/')
+  })
 })
 
 app.post('/messageIn', function (req, res) {
@@ -210,8 +230,12 @@ app.post('/messageIn', function (req, res) {
       res.send('<Response><Message>Service error... admin has been notified.</Message></Response>')
       monitor.notifyAdmin("Error trying to remove notifications for " + number + ": " + err.message)
     })
-  } else if(monitor.getMonitoredPlayers()[number] && monitor.getMonitoredPlayers()[number].names && monitor.getMonitoredPlayers()[number].names.length === 1) {
-    res.send(`<Response><Message>\nYou are currently monitoring ${monitor.getMonitoredPlayers()[number].names}.  This application supports monitoring for only one person per number.  Send a message of REMOVE if you want to reset and monitor someone else.\n</Message></Response>`)
+  } else if(
+    monitor.getMonitoredPlayers()[number] && 
+    !monitor.getMonitoredPlayers()[number].extras && 
+    monitor.getMonitoredPlayers()[number].names && 
+    monitor.getMonitoredPlayers()[number].names.length >= 1) {
+    res.send(`<Response><Message>\nYou are currently monitoring ${monitor.getMonitoredPlayers()[number].names}. ${extrasMessage}</Message></Response>`)
   } else {
     monitor.playerSearch(msg).then(function (players) {
       if (!players || players.length <= 0) {
@@ -273,8 +297,8 @@ app.listen(port)
 winston.info("Program running on " + port + ", monitor currently stopped...")
 console.log("Program running on " + port + ", monitor currently stopped...")
 
-winston.info("Starting up")
-console.log("Started!")
-monitor.monitorStart()
+// winston.info("Starting up")
+// console.log("Started!")
+// monitor.monitorStart()
 
 exports = module.exports = app;

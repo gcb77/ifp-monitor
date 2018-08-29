@@ -43,7 +43,7 @@ let internalServerData = newInternalServerData()
 
 let monitorInterval = undefined
 let notifiedProblems = false
-let monitoringInterval = 10000
+let monitoringInterval = 30000
 
 
 let stats = newStats()
@@ -118,6 +118,26 @@ function updatePlayerDb(name, number) {
   })
 }
 
+function enableExtraFeatures(number) {
+  return new Promise(function (resolve, reject) {
+    if (internalServerData.monitoredPlayers[number]) {
+      //Update the current number to include 'extras'
+      internalServerData.monitoredPlayers[number].extras = true
+    } else {
+      //Create a new object for the number so when the user registers 'extras' will be enabled
+      internalServerData.monitoredPlayers[number] = {
+        enabled: true,
+        extras: true,
+        names: []
+      }
+    }
+
+    //Write the changes to disk
+    fs.writeFileSync(playersFileName, JSON.stringify(internalServerData.monitoredPlayers))
+
+    resolve()
+  })
+}
 
 function addMonitoredPlayer(name, number) {
   if (!name) {
@@ -225,7 +245,8 @@ function processMatchPage(html) {
         internalServerData.notifiedPlayers[key] = 1
       } else {
         internalServerData.notifiedPlayers[key] = 1
-        let message = "Table " + match.table + " " + match.event + " " + match.team1 + " vs " + match.team2 + ' for ' + match.forPosition
+        let msgFor = internalServerData.monitoredPlayers[number].names.length > 1 ? `(${player}) ` : ''
+        let message = `Table ${match.table} ${msgFor}${match.event} ${match.team1} vs ${match.team2} for ${match.forPosition}`
         let dt = new Date()
         winston.info(dt + " notifying " + player + "(" + number + ") " + message)
         sms.sendMessage(number, message).catch(localErrorHandler)
@@ -532,6 +553,7 @@ module.exports = {
   playerSearch: playerSearch,
   getPlayerDb: getPlayerDb,
   notifyAdmin: notifyAdmin,
+  enableExtraFeatures: enableExtraFeatures,
   getRegistrationResponse: function () {
     return internalServerData.registrationResponse
   },

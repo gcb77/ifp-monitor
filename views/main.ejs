@@ -30,11 +30,25 @@
                 </div>
 
             </div>
+        </form>
+        <form method="POST" action="/setExtrasMessage">
+            <div class="row">
+
+                <div class="col col-sm-8">
+                    <input type="text" style="width: 100%" name="message" value="<%-extrasMessage%>">
+                </div>
+
+                <div class="col col-sm-4">
+                    <input type="submit" class="btn btn-primary" value="Update">
+                </div>
+
+            </div>
+        </form>
+
 
             <% if (canArchive) { %>
                 <hr><a href='/archive' class='btn btn-warning'>Archive</a><br>
             <% } %>
-        </form>
     </main>
 </body>
 
