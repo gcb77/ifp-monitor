@@ -10,7 +10,7 @@ var monitor = require('./monitor.js')
 var user = process.env['SECURE_USER']
 var password = process.env['SECURE_PASSWORD']
 
-let extrasMessage = 'This application supports monitoring for only one person per number.  Send a message of REMOVE if you want to reset and monitor someone else.'
+let extrasMessage = 'You are only allowed to track one player, visit http://pass.myfoos.com to enable monitoring for multiple players.  Send a message of REMOVE if you want to reset and track someone else.'
 
 const dataStore = require('./dataStore')
 

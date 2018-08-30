@@ -169,11 +169,16 @@ function addMonitoredPlayer(name, number) {
     internalServerData.monitoredPlayers[number].names.push(name)
 
     //Send message to admin
-    let responseStr = internalServerData.registrationResponse.replace('$player', name)
     // sms.sendMessage(adminNumber, "Added " + name + " to monitor, sending notifications to " + number)
 
-    //Send message to subscriber
-    sms.sendMessage(number, responseStr)
+    if(internalServerData.monitoredPlayers[number].names.length <= 1) {
+      //Send message to first time subscriber
+      let responseStr = internalServerData.registrationResponse.replace('$player', name)
+      sms.sendMessage(number, responseStr)
+    } else {
+      let responseStr = `${name} added`
+      sms.sendMessage(number, responseStr)
+    }
 
     //Track the monitored player
     // internalServerData.monitoredPlayers[number][name] = 0
