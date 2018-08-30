@@ -132,6 +132,9 @@ function enableExtraFeatures(number) {
       }
     }
 
+    //Send message to subscriber
+    sms.sendMessage(number, 'Multiple player monitoring has been enabled for this device.')
+
     //Write the changes to disk
     fs.writeFileSync(playersFileName, JSON.stringify(internalServerData.monitoredPlayers))
 
@@ -385,7 +388,8 @@ function removeMonitoredNumber(numberToRemove) {
   return new Promise(function (resolve, reject) {
       let removedNames = internalServerData.monitoredPlayers[numberToRemove].names
       winston.info("Removing " + removedNames + " from number " + numberToRemove)
-      delete internalServerData.monitoredPlayers[numberToRemove]
+      //Keep the object to preserve information but remove names associated with it
+      internalServerData.monitoredPlayers[numberToRemove].names = []
       stats.monitoredPlayers = getMonitoredPlayerNames()
 
       //Persist the new player structure
@@ -541,6 +545,15 @@ function notifyAdmin(msg) {
   return sms.sendMessage(adminNumber, msg)
 }
 
+function notifyAll(msg) {
+  for(let number in internalServerData.monitoredPlayers) {
+    let monitored = internalServerData.monitoredPlayers[number]
+    if(monitored.enabled && monitored.names && monitored.names.length) {
+      sms.sendMessage(number, msg)
+    }
+  }
+}
+
 module.exports = {
   addMonitoredPlayer: addMonitoredPlayer,
   monitorStart: monitorStart,
@@ -553,6 +566,7 @@ module.exports = {
   playerSearch: playerSearch,
   getPlayerDb: getPlayerDb,
   notifyAdmin: notifyAdmin,
+  notifyAll: notifyAll,
   enableExtraFeatures: enableExtraFeatures,
   getRegistrationResponse: function () {
     return internalServerData.registrationResponse

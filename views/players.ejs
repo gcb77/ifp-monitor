@@ -13,15 +13,21 @@
             <div class="form-inline">
                 <div class="form-group">
                     <div class="row row-fluid">
-                    <div class="col-sm-5 text-nowrap">
+                    <div class="col-sm-1 col-xs-6 text-nowrap">
                         <label for="name-input">NAME:</label>
+                    </div>
+                    <div class="col-sm-3 col-xs-6 text-nowrap">
                         <input id='name-input' type=text name="name">
                     </div>
-                    <div class="col-sm-5 text-nowrap">
+                    <div class="col col-sm-1 hidden-xs"></div>
+                    <div class="col-sm-2 col-xs-6 text-nowrap">
                         <label for="number-input">NUMBER:</label>
+                    </div>
+                    <div class="col-sm-3 col-xs-6 text-nowrap">
                         <input id='number-input' type=text name="number">
                     </div>
-                    <div class="col-sm-2">
+                    <div class="col col-sm-1 hidden-xs"></div>
+                    <div class="col-sm-1">
                         <input type="submit" value="Add" class="btn btn-primary" />
                     </div>
                     </div>
@@ -31,23 +37,28 @@
         <br>
         <hr>
 
+        <ul class="list-group">
         <% for ( player of players ) { %>
-            <div class="row">
-                <div class="col col-xs-3"> <%- player.number %>
-                        <% if (player.notifications) { %>
-                        <span class="badge">
-                            <%-player.notifications%>
-                        </span>
-                        <% } %>
+            
+            <li class="list-group-item">
+                <div class="row">
+                <div class="col col-xs-1 col-sm-1">
+                    <% if (player.notifications) { %>
+                    <span class="badge">
+                        <%-player.notifications%>
+                    </span>
+                    <% } %>
                 </div>
-                <div class="col col-xs-3">
-                    <div class="label label-primary" title="<%=player.names%>"><%= player.names[0] %>
+ 
+                <div class="col col-xs-2 col-sm-2"> <%- player.number %> </div>
+                <div class="col col-xs-8 col-sm-5">
+                    <div class="" title="<%=player.names%>"><%= player.names[0] %>
                     <% if ( player.names.length > 1 ) { %>
                         + <%=player.names.length-1%>
                     <% } %>
                     </div>
                 </div>
-                <div class="col col-xs-2">
+                <div class="col hidden-xs col-sm-1">
                     <% if (player.enabled) { %>
                         <a href='/setMonitorStatus/<%=encodeURIComponent(player.number)%>/false'>
                             <span class='glyphicon glyphicon-stop'></span>
@@ -58,12 +69,12 @@
                         </a>
                     <% } %>
                 </div>
-                <div class="col col-xs-2">
+                <div class="col hidden-xs col-sm-1">
                     <a href='/remove/<%=encodeURIComponent(player.number)%>'>
                         <span class='glyphicon glyphicon-remove'></span>
                     </a>
                 </div>
-                <div class="col col-xs-2">
+                <div class="col col-xs-1 col-sm-1">
                     <% if (player.extras) { %>
                         <span class='glyphicon glyphicon-star'></span>
                     <% } else { %>
@@ -72,10 +83,10 @@
                     </a>
                     <% } %>
                 </div>
-            </div>
-            <br>
+                </div>
+            </li>
             <% } %>
-
+        </ul>
     </main>
 </body>
 </html>

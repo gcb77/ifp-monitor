@@ -23,7 +23,7 @@ var app = express()
 app.set('view engine', 'ejs')
 
 //Use body-parser for messageIn
-app.use(['/messageIn', '/setRegistrationResponse', '/setExtrasMessage'], bodyParser.urlencoded({
+app.use(['/messageIn', '/setRegistrationResponse', '/setExtrasMessage', '/notifyAll'], bodyParser.urlencoded({
   extended: true
 }))
 
@@ -79,6 +79,12 @@ app.post('/setExtrasMessage', function (req, res) {
   res.redirect('/')
 })
 
+app.post('/notifyAll', function (req, res) {
+  debug('Request for /notifyAll: ' + req.body.message)
+  monitor.notifyAll(req.body.message)
+  res.redirect('/')
+})
+
 app.post('/setRegistrationResponse', function (req, res) {
   debug('Request for /setRegistrationResponse: ' + req.body.message)
   monitor.setRegistrationResponse(req.body.message)
@@ -106,8 +112,14 @@ app.get('/remove/:number', function (req, res) {
 
 app.get('/log', function (req, res) {
   debug('Request for /log')
+  let notifications = []
   let log = monitor.getStats().notificationLog
-  let notifications = log ? log.reverse() : []
+  let len = log.length
+  for (let i = 1; i < 100; i += 1) {
+    if (len - i >= 0) {
+      notifications.push(log[len - i])
+    }
+  }
   debug("Notifications: ", notifications)
   res.render('log', { notifications })
 })
@@ -222,7 +234,7 @@ app.post('/messageIn', function (req, res) {
   } else if (msg.match(/^REMOVE/i)) {
     monitor.removeMonitorNumber(number).then(function (names) {
       if (names && names.length > 0) {
-        res.send('<Response><Message/></Response>')
+        res.send('<Response><Message></Message></Response>')
       } else {
         res.send('<Response><Message>No players being monitored with number ' + number + '</Message></Response>')
       }
