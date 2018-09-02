@@ -5,6 +5,7 @@ let monitor
 
 process.env.TWILIO_ACCOUNT_SID='null'
 process.env.TWILIO_AUTH_TOKEN='null'
+process.env.TWILIO_PHONE_NUMBERS='123,456'
 
 monitor = rewire('../src/monitor.js')
 monitor.__set__('request', requestMock)

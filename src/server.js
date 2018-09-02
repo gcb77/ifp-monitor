@@ -234,7 +234,7 @@ app.post('/messageIn', function (req, res) {
   } else if (msg.match(/^REMOVE/i)) {
     monitor.removeMonitorNumber(number).then(function (names) {
       if (names && names.length > 0) {
-        res.send('<Response><Message></Message></Response>')
+        res.send('<Response/>')
       } else {
         res.send('<Response><Message>No players being monitored with number ' + number + '</Message></Response>')
       }
