@@ -7,7 +7,7 @@ let sendingNumbersStr = process.env['TWILIO_PHONE_NUMBERS']
 
 if(!sendingNumbersStr && !process.env.SMS_DISABLED) {
   throw new Error("Env var TWILIO_PHONE_NUMBERS not set")
-} else {
+} else if(process.env.SMS_DISABLED) {
   sendingNumbersStr = '111,222,333'
 }
 
