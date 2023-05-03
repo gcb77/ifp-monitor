@@ -10,20 +10,30 @@ function findMatches(data) {
     }
     var event = matchRow.children[1].children[1].children[0].data
     var table = matchRow.children[2].children[1].attribs.value
+    var team1RecallNode = matchRow.children[4].children[0]
     var team1 = matchRow.children[5].children[1].children[0].data
     var team2 = matchRow.children[7].children[1].children[0].data
+    var team2RecallNode = matchRow.children[8].children[0]
     var forPs = matchRow.children[9].children[1].children[0].data
+
+    team1Recall = team1RecallNode.data.replace(/\s+/g, '').length > 0 ||
+      team1RecallNode.children?.length > 0
+
+    team2Recall = team2RecallNode.data?.replace(/\s+/g, '').length > 0 ||
+      team2RecallNode.children?.length > 0
 
     event = event.replace(/\n|\r|\t/g, '')
     table = table.replace(/\n|\r|\t/g, '')
     forPs = forPs.replace(/\n|\r|\t/g, '')
 
     matches.push({
-      event: event,
-      table: table,
-      team1: team1,
-      team2: team2,
-      forPosition: forPs
+      event,
+      table,
+      team1,
+      team2,
+      forPosition: forPs,
+      team1Recall,
+      team2Recall
     })
     // console.log("MATCH: " + event + ' ' + team1 + " vs " + team2 + ' on table ' + table)
   })

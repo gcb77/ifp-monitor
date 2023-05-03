@@ -251,6 +251,32 @@ function processMatchPage(html) {
 
         //Flag this notification as still active
         internalServerData.notifiedPlayers[key] = 1
+
+        //Check if team the player is in is on recall
+        if (
+          (match.team1Recall && match.team1.indexOf(player) > -1) ||
+          (match.team2Recall && match.team2.indexOf(player) > -1)
+        ) {
+          //Send recall message to player
+          const recallMsgKey = `${number}_${match.event}_${match.team1}_${match.team2}_${match.forPosition}_recall`
+          if (internalServerData.notifiedPlayers[recallMsgKey] !== undefined) {
+            // Already notified, don't send again
+            internalServerData.notifiedPlayers[recallMsgKey] = 1
+          } else {
+            const recallMessage = `Recall for ${match.team1Recall ? match.team1 : ''} ${match.team2Recall ? match.team2 : ''} at table ${match.table}`
+            let dt = new Date()
+            winston.info(dt + " notifying " + player + "(" + number + ") " + recallMessage)
+            sms.sendMessage(number, recallMessage).catch(localErrorHandler)
+            internalServerData.notifiedPlayers[recallMsgKey] = 1
+            stats.notificationsSent += 1
+            stats.notificationLog.push(
+              ("00" + dt.getHours()).slice(-2) + ':' +
+              ("00" + dt.getMinutes()).slice(-2) + ':' +
+              ("00" + dt.getSeconds()).slice(-2) + ' ' +
+              player + " (" + number + ") - " +
+              recallMessage)
+          }
+        }
       } else {
         internalServerData.notifiedPlayers[key] = 1
         let msgFor = internalServerData.monitoredPlayers[number].names.length > 1 ? `(${player}) ` : ''
